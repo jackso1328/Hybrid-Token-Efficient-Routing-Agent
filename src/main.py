@@ -24,10 +24,30 @@ class GemmaCascadeRouter:
         
         self.ner_grammar = get_ner_grammar()
         self.sentiment_grammar = get_sentiment_grammar()
+        
+        # Token Recycling (Fragment Reuse Cache)
+        self.token_cache = {}
+
+    def _check_cache(self, prompt: str) -> str:
+        """
+        Simple exact-match and prefix-match token recycling.
+        If we already solved an identical problem, reuse the answer.
+        """
+        # Exact match
+        if prompt in self.token_cache:
+            return self.token_cache[prompt]
+            
+        # Very rough similarity (if it's 90% the same prompt)
+        for cached_prompt, cached_answer in self.token_cache.items():
+            if cached_prompt[:50] == prompt[:50] and len(cached_prompt) == len(prompt):
+                return cached_answer
+                
+        return None
 
     def process_task(self, task: dict) -> dict:
         """
         The core pipeline:
+        0. Check Cache (Token Recycling)
         1. Classify
         2. Generate locally (with budget & grammar)
         3. Verify deterministically
@@ -36,6 +56,18 @@ class GemmaCascadeRouter:
         """
         prompt = task["prompt"]
         task_id = task["task_id"]
+        
+        # 0. Token Recycling (Fragment reuse)
+        cached_ans = self._check_cache(prompt)
+        if cached_ans:
+            print(f"  -> Cache hit! Recycled tokens for {task_id}.")
+            return {
+                "task_id": task_id,
+                "answer": cached_ans,
+                "source": "cache_recycled",
+                "category": "recycled",
+                "entropy": 0.0
+            }
         
         # 1. Classify
         task_type = self.classifier.classify(prompt)
@@ -88,6 +120,10 @@ class GemmaCascadeRouter:
                 second_opinion = self.local_engine.chat_completion(messages, max_tokens=budget, temperature=0.5)["content"]
                 if second_opinion.split()[:5] != raw_local_answer.split()[:5]: # Very rough similarity check
                     verified = False # Escalated!
+                    
+        # Force escalation if local model is dead or failed classification
+        if task_type == "unknown" or "[MOCK]" in raw_local_answer:
+            verified = False
 
         # 4. Routing Decision
         final_answer = raw_local_answer
@@ -115,6 +151,9 @@ class GemmaCascadeRouter:
             
         # 5. Answer Distillation
         distilled_answer = self.distiller.distill(final_answer)
+        
+        # Cache the result for future Token Recycling
+        self.token_cache[prompt] = distilled_answer
         
         return {
             "task_id": task_id,

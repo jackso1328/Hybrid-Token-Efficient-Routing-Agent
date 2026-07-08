@@ -58,6 +58,11 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
         try:
             # We specifically DO NOT use tools here because API tokens cost money.
             # We just want the raw answer generated as cheaply as possible.
+            
+            # For Fireworks, we strictly disable the thinking budget
+            # to prevent it from wasting tokens on hidden reasoning.
+            extra_body = {"budget_tokens": 0} if not self.is_openrouter else None
+            
             response = self.client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -66,6 +71,7 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
                 ],
                 max_tokens=max_tokens,
                 temperature=0.1,
+                extra_body=extra_body,
                 # ExtraHeaders required by OpenRouter to show the app name
                 extra_headers={
                     "HTTP-Referer": "https://github.com/jackso1328/Hybrid-Token-Efficient-Routing-Agent",
