@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from .config import FIREWORKS_API_KEY, FIREWORKS_BASE_URL, OPENROUTER_API_KEY, OPENROUTER_BASE_URL, ALLOWED_MODELS
+from config import FIREWORKS_API_KEY, FIREWORKS_BASE_URL, OPENROUTER_API_KEY, OPENROUTER_BASE_URL, ALLOWED_MODELS
 
 class APIClient:
     """
@@ -33,7 +33,7 @@ class APIClient:
         In testing mode, it defaults to the free OpenRouter Gemma model.
         """
         if not ALLOWED_MODELS:
-            return "google/gemma-2-9b-it:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
+            return "huggingfaceh4/zephyr-7b-beta:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
             
         # Simplistic selection: 
         # For 'hard' tasks, pick the last model in the list (usually the biggest)
