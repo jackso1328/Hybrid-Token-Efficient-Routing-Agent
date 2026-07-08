@@ -33,7 +33,7 @@ class APIClient:
         In testing mode, it defaults to the free OpenRouter Gemma model.
         """
         if not ALLOWED_MODELS:
-            return "huggingfaceh4/zephyr-7b-beta:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
+            return "tencent/hy3:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
             
         # Simplistic selection: 
         # For 'hard' tasks, pick the last model in the list (usually the biggest)
@@ -78,7 +78,8 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
                     "X-Title": "GemmaCascade Router"
                 } if self.is_openrouter else None
             )
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else ""
         except Exception as e:
             print(f"API Call Failed: {e}")
             return f"[API_ERROR] {str(e)}"
