@@ -1,18 +1,19 @@
 import os
 import math
-from typing import Dict, Any, Optional
+import json
+from typing import Dict, Any, List, Optional
 
 try:
-    from llama_cpp import Llama
+    from llama_cpp import Llama, LlamaGrammar
 except ImportError:
     print("WARNING: llama-cpp-python is not installed. Local generation will fail.")
     Llama = None
+    LlamaGrammar = None
 
 class LocalGemmaEngine:
     def __init__(self, model_path: str = "models/test-model-q4_k_m.gguf", n_ctx: int = 4096, n_threads: int = 4):
         """
-        Initializes the local Gemma engine.
-        Using a placeholder model path by default for rapid testing.
+        Initializes the local Gemma engine with full support for Chat Templates and Tool Calling.
         """
         self.model_path = model_path
         self.n_ctx = n_ctx
@@ -34,67 +35,79 @@ class LocalGemmaEngine:
             model_path=self.model_path,
             n_ctx=self.n_ctx,
             n_threads=self.n_threads,
-            verbose=False # Keep logs clean
+            verbose=False, # Keep logs clean
+            chat_format="gemma" # Enforce Gemma-native prompt format
         )
         print("Local model loaded successfully.")
 
-    def generate(self, prompt: str, max_tokens: int = 256, temperature: float = 0.1, stop: list = None) -> Dict[str, Any]:
+    def chat_completion(
+        self, 
+        messages: List[Dict[str, str]], 
+        tools: Optional[List[Dict]] = None,
+        tool_choice: Optional[str] = "auto",
+        grammar: Optional['LlamaGrammar'] = None,
+        max_tokens: int = 256, 
+        temperature: float = 0.1
+    ) -> Dict[str, Any]:
         """
-        Generates text using the local model.
-        Also calculates entropy to measure the model's uncertainty.
+        Generates text or tool calls using Gemma's native chat completion endpoint.
+        Calculates entropy of the generation for confidence scoring.
         """
         if not self.llm:
-            return {"text": "[MOCK] Model not loaded. Would generate locally.", "entropy": 0.0}
+            return {"content": "[MOCK] Model not loaded.", "tool_calls": [], "entropy": 0.0}
             
-        if stop is None:
-            stop = ["<|im_end|>", "</s>", "<eos>"]
+        # Optional parameters dictionary to avoid passing None to llama.cpp
+        kwargs = {}
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = tool_choice
+        if grammar:
+            kwargs["grammar"] = grammar
             
-        # We request logprobs so we can calculate entropy
-        response = self.llm(
-            prompt,
+        response = self.llm.create_chat_completion(
+            messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
-            stop=stop,
-            logprobs=1, 
-            echo=False
+            logprobs=True,
+            **kwargs
         )
         
-        generated_text = response['choices'][0]['text'].strip()
-        logprobs_data = response['choices'][0]['logprobs']
+        message_out = response['choices'][0]['message']
+        content = message_out.get('content', '')
+        tool_calls = message_out.get('tool_calls', [])
         
-        entropy = self._calculate_entropy(logprobs_data)
-        
+        # Calculate entropy if logprobs are available
+        entropy = 0.0
+        if 'logprobs' in response['choices'][0] and response['choices'][0]['logprobs']:
+            entropy = self._calculate_chat_entropy(response['choices'][0]['logprobs'])
+            
         return {
-            "text": generated_text,
+            "content": content,
+            "tool_calls": tool_calls,
             "entropy": entropy,
             "raw_response": response
         }
         
-    def _calculate_entropy(self, logprobs_data: dict) -> float:
+    def _calculate_chat_entropy(self, logprobs_data: dict) -> float:
         """
-        Calculates the mean entropy of the generated tokens based on log probabilities.
-        Higher entropy = higher uncertainty.
+        Calculates mean entropy from chat completion logprobs.
         """
-        if not logprobs_data or 'token_logprobs' not in logprobs_data:
+        if not logprobs_data or 'content' not in logprobs_data:
             return 0.0
             
-        token_logprobs = logprobs_data['token_logprobs']
-        # Filter out None values (first token often lacks logprob)
-        valid_logprobs = [lp for lp in token_logprobs if lp is not None]
+        content_logprobs = logprobs_data['content']
+        if not content_logprobs:
+            return 0.0
+            
+        # Extract the actual logprob value from each token dictionary
+        valid_logprobs = []
+        for lp_dict in content_logprobs:
+            if isinstance(lp_dict, dict) and 'logprob' in lp_dict:
+                valid_logprobs.append(lp_dict['logprob'])
         
         if not valid_logprobs:
             return 0.0
             
-        # Entropy H = -1 * logprob (since logprob is log2 or ln of probability)
-        # Average it across all generated tokens
         total_entropy = sum(-lp for lp in valid_logprobs)
-        mean_entropy = total_entropy / len(valid_logprobs)
-        
-        return mean_entropy
+        return total_entropy / len(valid_logprobs)
 
-if __name__ == "__main__":
-    # Simple test
-    engine = LocalGemmaEngine()
-    result = engine.generate("The capital of France is ")
-    print(f"Generated: {result['text']}")
-    print(f"Entropy: {result['entropy']:.4f}")

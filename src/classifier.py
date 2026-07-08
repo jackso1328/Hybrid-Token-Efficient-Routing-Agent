@@ -1,5 +1,4 @@
 from .local_engine import LocalGemmaEngine
-import re
 
 class TaskClassifier:
     def __init__(self, engine: LocalGemmaEngine):
@@ -10,7 +9,7 @@ class TaskClassifier:
         Uses the local LLM to classify the user prompt into one of the 8 categories.
         Categories: math, code_gen, code_debug, ner, summarize, sentiment, logic, factual
         """
-        system_prompt = """You are a classification system. Classify the following task into exactly ONE of these categories:
+        system_prompt = """You are a strict classification system. Classify the following user task into exactly ONE of these categories:
 - math: Mathematical calculations or word problems
 - code_gen: Writing new code or functions
 - code_debug: Finding bugs or fixing existing code
@@ -20,19 +19,21 @@ class TaskClassifier:
 - logic: Logical reasoning or puzzles
 - factual: General knowledge questions
 
-Output ONLY the category name. No other text."""
+Output ONLY the category name in lowercase. No other text, no preamble."""
 
-        full_prompt = f"<|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
         
         # We only need a few tokens for classification
-        result = self.engine.generate(full_prompt, max_tokens=10, temperature=0.1)
+        result = self.engine.chat_completion(messages=messages, max_tokens=10, temperature=0.1)
         
         # Clean the output
-        category = result["text"].strip().lower()
+        category = result["content"].strip().lower()
         
-        # Fallback parsing if the model outputs something like "Category: math"
+        # Fallback parsing
         valid_categories = ["math", "code_gen", "code_debug", "ner", "summarize", "sentiment", "logic", "factual"]
-        
         for valid in valid_categories:
             if valid in category:
                 return valid
@@ -45,3 +46,4 @@ if __name__ == "__main__":
     classifier = TaskClassifier(engine)
     print(classifier.classify("What is the capital of France?"))
     print(classifier.classify("Extract the names from this text: Alice went to Paris."))
+
