@@ -1,6 +1,178 @@
-def main():
-    print("Starting Gemma Cascade Router...")
-    # TODO: Read tasks, process, and write results
+import json
+import time
+import concurrent.futures
+from concurrent.futures import TimeoutError
+
+from local_engine import LocalGemmaEngine
+from classifier import TaskClassifier
+from api_client import APIClient
+from compressor import LLMPromptCompressor
+from distiller import AnswerDistiller
+from budget_manager import BudgetManager
+from grammars import get_ner_grammar, get_sentiment_grammar
+from verifiers import verify_math_answer, verify_code_answer, verify_ner_answer, verify_summary
+
+class GemmaCascadeRouter:
+    def __init__(self):
+        print("Initializing Gemma Cascade Router...")
+        self.local_engine = LocalGemmaEngine()
+        self.classifier = TaskClassifier(self.local_engine)
+        self.api_client = APIClient()
+        self.compressor = LLMPromptCompressor()
+        self.distiller = AnswerDistiller()
+        self.budget_manager = BudgetManager()
+        
+        self.ner_grammar = get_ner_grammar()
+        self.sentiment_grammar = get_sentiment_grammar()
+
+    def process_task(self, task: dict) -> dict:
+        """
+        The core pipeline:
+        1. Classify
+        2. Generate locally (with budget & grammar)
+        3. Verify deterministically
+        4. Escalate to API if verification fails
+        5. Distill answer
+        """
+        prompt = task["prompt"]
+        task_id = task["task_id"]
+        
+        # 1. Classify
+        task_type = self.classifier.classify(prompt)
+        budget = self.budget_manager.get_budget(task_type)
+        
+        # Determine Grammars
+        grammar = None
+        if task_type == "ner":
+            grammar = self.ner_grammar
+        elif task_type == "sentiment":
+            grammar = self.sentiment_grammar
+
+        # 2. Local Generation (The Brain)
+        messages = [{"role": "user", "content": prompt}]
+        # Wild-Card: Thinking Mode locally for hard tasks
+        if task_type in ["math", "logic", "code_gen", "code_debug"]:
+            messages.insert(0, {"role": "system", "content": "You are a precise problem solver. <|think|>\nThink step by step."})
+            
+        local_result = self.local_engine.chat_completion(
+            messages=messages,
+            grammar=grammar,
+            max_tokens=budget
+        )
+        
+        raw_local_answer = local_result["content"]
+        
+        # Track simulated usage (mock)
+        tokens_used = len(raw_local_answer.split()) # Rough estimate
+        self.budget_manager.record_usage(task_type, tokens_used)
+        
+        # 3. Deterministic Verification (The Safety Net)
+        verified = True
+        corrected_answer = None
+        
+        if task_type == "math":
+            verified, corrected_answer = verify_math_answer(prompt, raw_local_answer, self.local_engine)
+        elif task_type in ["code_debug", "code_gen"]:
+            verified, error_msg = verify_code_answer(raw_local_answer, task_type)
+        elif task_type == "ner":
+            verified, enriched_json = verify_ner_answer(prompt, raw_local_answer)
+            if enriched_json:
+                corrected_answer = enriched_json
+        elif task_type == "summarize":
+            verified, shortened = verify_summary(prompt, raw_local_answer, self.local_engine)
+            if shortened:
+                corrected_answer = shortened
+        elif task_type in ["logic", "factual"]:
+            # Wild-Card: Self-Debate (Trust entropy. If uncertain, double check)
+            if local_result["entropy"] > 0.8: # High uncertainty
+                second_opinion = self.local_engine.chat_completion(messages, max_tokens=budget, temperature=0.5)["content"]
+                if second_opinion.split()[:5] != raw_local_answer.split()[:5]: # Very rough similarity check
+                    verified = False # Escalated!
+
+        # 4. Routing Decision
+        final_answer = raw_local_answer
+        source = "local"
+        
+        if verified and corrected_answer is None:
+            # Local answer is perfect
+            final_answer = raw_local_answer
+        elif corrected_answer is not None:
+            # We fixed it locally!
+            final_answer = corrected_answer
+            source = "local_corrected"
+        else:
+            # Verification failed. Escalate to API!
+            source = "api_escalation"
+            compressed_prompt = self.compressor.compress(prompt)
+            api_difficulty = "hard" if task_type in ["math", "logic", "code_gen"] else "medium"
+            
+            # Disable thinking trace on API to save tokens
+            final_answer = self.api_client.generate_escalated_answer(
+                prompt=f"{compressed_prompt}\nProvide ONLY the final answer. No reasoning.",
+                task_difficulty=api_difficulty,
+                max_tokens=budget
+            )
+            
+        # 5. Answer Distillation
+        distilled_answer = self.distiller.distill(final_answer)
+        
+        return {
+            "task_id": task_id,
+            "answer": distilled_answer,
+            "source": source,
+            "category": task_type,
+            "entropy": local_result["entropy"]
+        }
+
+def run_pipeline(input_file="input/tasks.json", output_file="output/results.json"):
+    router = GemmaCascadeRouter()
+    
+    with open(input_file, "r") as f:
+        tasks = json.load(f)
+        
+    results = []
+    
+    # 6.3 Timeout Guards
+    # We strictly bound each task to 12 seconds to ensure we survive the 10-minute global limit
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        for task in tasks:
+            print(f"Processing Task {task['task_id']}...")
+            start_time = time.time()
+            try:
+                # Submit task to thread
+                future = executor.submit(router.process_task, task)
+                # Wait for up to 12 seconds
+                result = future.result(timeout=12)
+                results.append(result)
+                print(f"  -> Solved via {result['source']} in {time.time() - start_time:.2f}s")
+            except TimeoutError:
+                print(f"  -> TIMEOUT! Local model hung. Escalating immediately to API...")
+                # Emergency API Fallback if local model hangs
+                emergency_ans = router.api_client.generate_escalated_answer(task["prompt"], "hard", max_tokens=100)
+                results.append({
+                    "task_id": task["task_id"],
+                    "answer": router.distiller.distill(emergency_ans),
+                    "source": "api_emergency_timeout",
+                    "category": "unknown",
+                    "entropy": 0.0
+                })
+            except Exception as e:
+                print(f"  -> ERROR: {e}")
+                results.append({
+                    "task_id": task["task_id"],
+                    "answer": "Error processing task.",
+                    "source": "error"
+                })
+                
+    import os
+    if not os.path.exists(os.path.dirname(output_file)):
+        os.makedirs(os.path.dirname(output_file))
+        
+    with open(output_file, "w") as f:
+        json.dump(results, f, indent=2)
+        
+    print(f"Finished! Processed {len(tasks)} tasks. Results saved to {output_file}.")
 
 if __name__ == "__main__":
-    main()
+    run_pipeline()
+
