@@ -1,0 +1,58 @@
+[
+  {
+    "task_id": "T001",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "factual",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T002",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "math",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T003",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "sentiment",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T004",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "summarize",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T005",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "ner",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T006",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "code_debug",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T007",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "code_gen",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "T008",
+    "answer": "[API_FAILED] No client configured.",
+    "source": "api_escalation",
+    "category": "factual",
+    "entropy": 99.0
+  }
+]
