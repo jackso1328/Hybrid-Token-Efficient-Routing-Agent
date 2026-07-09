@@ -194,24 +194,20 @@ def run_pipeline(input_file="input/tasks.json", output_file="output/results.json
                 # Wait for up to 12 seconds
                 result = future.result(timeout=12)
                 results.append(result)
-                print(f"  -> Solved via {result['source']} in {time.time() - start_time:.2f}s")
+                print(f"  -> Solved via {result.get('source', 'pipeline')} in {time.time() - start_time:.2f}s")
             except TimeoutError:
                 print(f"  -> TIMEOUT! Local model hung. Escalating immediately to API...")
                 # Emergency API Fallback if local model hangs
                 emergency_ans = router.api_client.generate_escalated_answer(task["prompt"], "hard", max_tokens=100)
                 results.append({
                     "task_id": task["task_id"],
-                    "answer": router.distiller.distill(emergency_ans),
-                    "source": "api_emergency_timeout",
-                    "category": "unknown",
-                    "entropy": 0.0
+                    "answer": router.distiller.distill(emergency_ans)
                 })
             except Exception as e:
                 print(f"  -> ERROR: {e}")
                 results.append({
                     "task_id": task["task_id"],
-                    "answer": "Error processing task.",
-                    "source": "error"
+                    "answer": "Error processing task."
                 })
                 
     import os
