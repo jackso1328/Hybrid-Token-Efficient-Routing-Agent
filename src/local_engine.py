@@ -10,8 +10,14 @@ except ImportError:
     Llama = None
     LlamaGrammar = None
 
+# The real Gemma E4B model for production (Docker)
+DEFAULT_MODEL_PATH = "models/gemma-4-e4b-it-q4_k_m.gguf"
+
+# Categories that benefit from thinking mode locally (free reasoning)
+THINKING_CATEGORIES = {"math", "logic", "code_gen", "code_debug"}
+
 class LocalGemmaEngine:
-    def __init__(self, model_path: str = "models/test-model-q4_k_m.gguf", n_ctx: int = 4096, n_threads: int = 4):
+    def __init__(self, model_path: str = DEFAULT_MODEL_PATH, n_ctx: int = 4096, n_threads: int = 4):
         """
         Initializes the local Gemma engine with full support for Chat Templates and Tool Calling.
         """
@@ -39,6 +45,24 @@ class LocalGemmaEngine:
             chat_format="gemma" # Enforce Gemma-native prompt format
         )
         print("Local model loaded successfully.")
+
+    def generate(self, prompt: str, max_tokens: int = 256, temperature: float = 0.1) -> Dict[str, Any]:
+        """
+        Raw text completion used by verifiers (math, format) for simple tasks
+        like converting a problem to a Python expression.
+        Returns {"text": str, "entropy": float}.
+        """
+        if not self.llm:
+            return {"text": "[MOCK] Model not loaded.", "entropy": 0.0}
+        
+        response = self.llm(
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            echo=False,
+        )
+        text = response['choices'][0]['text'].strip()
+        return {"text": text, "entropy": 0.0}
 
     def chat_completion(
         self, 

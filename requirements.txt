@@ -3,3 +3,4 @@ spacy==3.7.4
 sympy==1.12
 openai==1.35.3
 llmlingua==0.2.2
+python-dotenv==1.0.1

@@ -84,7 +84,8 @@ class GemmaCascadeRouter:
         messages = [{"role": "user", "content": prompt}]
         # Wild-Card: Thinking Mode locally for hard tasks
         if task_type in ["math", "logic", "code_gen", "code_debug"]:
-            messages.insert(0, {"role": "system", "content": "You are a precise problem solver. <|think|>\nThink step by step."})
+            # Gap 5 Fix: Use explicit system instruction instead of raw special tokens
+            messages.insert(0, {"role": "system", "content": "You are a precise problem solver. You must enclose your step-by-step reasoning inside <think>...</think> tags before providing the final answer."})
             
         local_result = self.local_engine.chat_completion(
             messages=messages,
@@ -114,6 +115,11 @@ class GemmaCascadeRouter:
             verified, shortened = verify_summary(prompt, raw_local_answer, self.local_engine)
             if shortened:
                 corrected_answer = shortened
+        elif task_type == "sentiment":
+            # Gap 2: Sentiment Verification
+            valid_sentiments = ["positive", "negative", "neutral", "mixed"]
+            if not any(s in raw_local_answer.lower() for s in valid_sentiments):
+                verified = False
         elif task_type in ["logic", "factual"]:
             # Wild-Card: Self-Debate (Trust entropy. If uncertain, double check)
             if local_result["entropy"] > 0.8: # High uncertainty
@@ -142,9 +148,16 @@ class GemmaCascadeRouter:
             compressed_prompt = self.compressor.compress(prompt)
             api_difficulty = "hard" if task_type in ["math", "logic", "code_gen"] else "medium"
             
+            # Gap 1: Dual-Pass Refinement
+            if task_type in ["code_debug", "code_gen"] and "[MOCK]" not in raw_local_answer:
+                # Send the draft and ask the API to fix it (cheaper than solving from scratch)
+                api_prompt = f"Draft answer:\n{raw_local_answer}\n\nOriginal prompt:\n{compressed_prompt}\n\nFix the draft if it is wrong. Provide ONLY the final answer."
+            else:
+                api_prompt = f"{compressed_prompt}\nProvide ONLY the final answer. No reasoning."
+                
             # Disable thinking trace on API to save tokens
             final_answer = self.api_client.generate_escalated_answer(
-                prompt=f"{compressed_prompt}\nProvide ONLY the final answer. No reasoning.",
+                prompt=api_prompt,
                 task_difficulty=api_difficulty,
                 max_tokens=budget
             )
@@ -155,12 +168,10 @@ class GemmaCascadeRouter:
         # Cache the result for future Token Recycling
         self.token_cache[prompt] = distilled_answer
         
+        # Gap 7: Return exactly the 2 keys required by the Hackathon spec
         return {
             "task_id": task_id,
-            "answer": distilled_answer,
-            "source": source,
-            "category": task_type,
-            "entropy": local_result["entropy"]
+            "answer": distilled_answer
         }
 
 def run_pipeline(input_file="input/tasks.json", output_file="output/results.json"):
