@@ -1,9 +1,0 @@
-# .gitignore
-models/*.gguf
-input/
-output/
-__pycache__/
-*.pyc
-.env
-.venv
-venv/
