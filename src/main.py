@@ -4,12 +4,6 @@ import json
 import time
 import re
 import gc
-import psutil
-
-def print_mem_usage(stage_name: str):
-    process = psutil.Process()
-    mem_mb = process.memory_info().rss / (1024 * 1024)
-    print(f"\n[MEMORY] {stage_name}: {mem_mb:.1f} MB")
 
 def safe_str(text: str) -> str:
     """Sanitize text for safe Windows console printing by replacing non-ASCII chars."""
@@ -224,19 +218,15 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     print(f"\n{'=' * 60}")
     print("  PHASE 1: Pre-computing Prompt Compression")
     print(f"{'=' * 60}")
-    print_mem_usage("Baseline Memory (Before Phase 1)")
     compressor = LLMPromptCompressor()
-    print_mem_usage("After Loading LLMLingua-2 Compressor")
     for t in tasks:
         t["compressed_prompt"] = compressor.compress(t["prompt"])
-    print_mem_usage("Peak Phase 1 Memory")
     print("  Compression complete. Freeing memory...")
+    compressor.free_memory()
     del compressor
     gc.collect()
-    print_mem_usage("After GC (Compressor Freed)")
         
     router = GemmaCascadeRouter()
-    print_mem_usage("After Loading Gemma Router (Phase 2)")
         
     results = []
     total_start = time.time()
