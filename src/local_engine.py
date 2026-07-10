@@ -1,3 +1,4 @@
+import traceback
 import os
 import math
 import json
@@ -30,7 +31,7 @@ class LocalGemmaEngine:
       - Raw text completion for verifiers
     """
 
-    def __init__(self, model_path: str = None, n_ctx: int = 8192, n_threads: int = 4):
+    def __init__(self, model_path: str = None, n_ctx: int = 512, n_threads: int = 4):
         self.model_path = model_path or LOCAL_MODEL_PATH
         self.n_ctx = n_ctx
         self.n_threads = n_threads
@@ -57,15 +58,14 @@ class LocalGemmaEngine:
                 model_path=self.model_path,
                 n_ctx=self.n_ctx,
                 n_threads=self.n_threads,
-                n_gpu_layers=0,        # CPU-only (Docker container)
-                verbose=False,
-                logits_all=False,
+                verbose=False
             )
             self.is_loaded = True
             print("Local model loaded successfully!")
-        except Exception as e:
-            print(f"ERROR loading local model: {e}")
-            print("  The router will fall back to API for all tasks.")
+        except Exception:
+            print("ERROR loading local model:")
+            traceback.print_exc()
+            print("The router will fall back to API.")
 
     def generate(self, prompt: str, max_tokens: int = 256, temperature: float = 0.1) -> Dict[str, Any]:
         """
@@ -131,8 +131,6 @@ class LocalGemmaEngine:
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                logprobs=True,
-                top_logprobs=5,
                 **kwargs
             )
 

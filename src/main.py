@@ -2,6 +2,14 @@ import os
 import sys
 import json
 import time
+import re
+import gc
+import psutil
+
+def print_mem_usage(stage_name: str):
+    process = psutil.Process()
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    print(f"\n[MEMORY] {stage_name}: {mem_mb:.1f} MB")
 
 def safe_str(text: str) -> str:
     """Sanitize text for safe Windows console printing by replacing non-ASCII chars."""
@@ -28,7 +36,6 @@ class GemmaCascadeRouter:
         self.local_engine = LocalGemmaEngine()
         self.classifier = TaskClassifier(self.local_engine)
         self.api_client = APIClient()
-        self.compressor = LLMPromptCompressor()
         self.distiller = AnswerDistiller()
         self.budget_manager = BudgetManager()
         
@@ -100,14 +107,22 @@ class GemmaCascadeRouter:
         messages = [{"role": "user", "content": prompt}]
         if task_type in ["math", "logic", "code_gen", "code_debug"]:
             messages.insert(0, {"role": "system", "content": "You are a precise problem solver. You must enclose your step-by-step reasoning inside <think>...</think> tags before providing the final answer."})
+            local_max_tokens = 1024
+        else:
+            messages.insert(0, {"role": "system", "content": "You are a precise assistant. Do NOT use <think> tags. Provide your answer directly and concisely."})
+            local_max_tokens = 256
             
         local_result = self.local_engine.chat_completion(
             messages=messages,
             grammar=grammar,
-            max_tokens=budget
+            max_tokens=local_max_tokens
         )
         
         raw_local_answer = local_result["content"]
+        
+        # Strip <think> tags early so verifiers and routing only see the final answer
+        raw_local_answer = re.sub(r'<think>.*?(?:</think>|$)\s*', '', raw_local_answer, flags=re.DOTALL).strip()
+        
         entropy = local_result["entropy"]
         
         tokens_used = len(raw_local_answer.split())
@@ -136,12 +151,12 @@ class GemmaCascadeRouter:
         elif task_type in ["logic", "factual"]:
             if entropy > 0.8:
                 print(f"[{task_id}] [WARN] High entropy ({entropy:.2f}). Triggering self-debate...")
-                second_opinion = self.local_engine.chat_completion(messages, max_tokens=budget, temperature=0.5)["content"]
+                second_opinion = self.local_engine.chat_completion(messages, max_tokens=local_max_tokens, temperature=0.5)["content"]
                 if second_opinion.split()[:5] != raw_local_answer.split()[:5]:
                     verified = False
                     
-        # Force escalation if local model is dead or failed classification
-        if task_type == "unknown" or "[MOCK]" in raw_local_answer:
+        # Force escalation if local model is dead, failed classification, or returned empty text
+        if task_type == "unknown" or "[MOCK]" in raw_local_answer or not raw_local_answer:
             verified = False
 
         print(f"[{task_id}] Verification: {'PASSED' if verified else 'FAILED -> Escalating to API'}")
@@ -158,7 +173,7 @@ class GemmaCascadeRouter:
         else:
             # Verification failed. Escalate to API!
             source = "api_escalation"
-            compressed_prompt = self.compressor.compress(prompt)
+            compressed_prompt = task.get("compressed_prompt", prompt)
             api_difficulty = "hard" if task_type in ["math", "logic", "code_gen"] else "medium"
             
             # Use generous token budget for API (minimum 1024 to avoid truncation by reasoning models)
@@ -203,10 +218,25 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         print(f"ERROR: Input file not found at {input_file}")
         return
         
-    router = GemmaCascadeRouter()
-    
     with open(input_file, "r") as f:
         tasks = json.load(f)
+        
+    print(f"\n{'=' * 60}")
+    print("  PHASE 1: Pre-computing Prompt Compression")
+    print(f"{'=' * 60}")
+    print_mem_usage("Baseline Memory (Before Phase 1)")
+    compressor = LLMPromptCompressor()
+    print_mem_usage("After Loading LLMLingua-2 Compressor")
+    for t in tasks:
+        t["compressed_prompt"] = compressor.compress(t["prompt"])
+    print_mem_usage("Peak Phase 1 Memory")
+    print("  Compression complete. Freeing memory...")
+    del compressor
+    gc.collect()
+    print_mem_usage("After GC (Compressor Freed)")
+        
+    router = GemmaCascadeRouter()
+    print_mem_usage("After Loading Gemma Router (Phase 2)")
         
     results = []
     total_start = time.time()

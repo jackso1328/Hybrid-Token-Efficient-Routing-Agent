@@ -1,0 +1,30 @@
+# Environments
+.env
+venv/
+.venv/
+env/
+*.swp
+
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Models and Data
+*.gguf
+*.bin
+*.pt
+*.safetensors
+
+# Logs and Docs
+*.log
+*.pdf
+*Zone.Identifier
+____Optimizing Token-Efficient AI Routing_____.md
+Optimizing Token-Efficient AI Routing.md
+implementation_plan_3.md
+diagnose_llama.py
+
+# IDEs
+.idea/
+.vscode/

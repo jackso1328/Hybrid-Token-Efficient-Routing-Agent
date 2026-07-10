@@ -1,58 +1,58 @@
 [
   {
     "task_id": "T001",
-    "answer": "[API_FAILED] No client configured.",
-    "source": "api_escalation",
+    "answer": "Paris",
+    "source": "local",
     "category": "factual",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T002",
-    "answer": "[API_FAILED] No client configured.",
+    "answer": "126",
     "source": "api_escalation",
     "category": "math",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T003",
-    "answer": "[API_FAILED] No client configured.",
-    "source": "api_escalation",
+    "answer": "mixed",
+    "source": "local",
     "category": "sentiment",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T004",
-    "answer": "[API_FAILED] No client configured.",
-    "source": "api_escalation",
+    "answer": "The Industrial Revolution, starting in the late 18th century in Britain, fundamentally transformed economies through mechanized manufacturing, new technologies like steam power and railways, and significant shifts in social structures.",
+    "source": "local",
     "category": "summarize",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T005",
-    "answer": "[API_FAILED] No client configured.",
-    "source": "api_escalation",
+    "answer": "{\"persons\":[\"Satya Nadella\"],\"organizations\":[\"Microsoft\",\"OpenAI\"],\"locations\":[\"Redmond\",\"Washington\"],\"dates\":[\"January 15, 2024\"]}",
+    "source": "local",
     "category": "ner",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T006",
-    "answer": "[API_FAILED] No client configured.",
+    "answer": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n-1)",
     "source": "api_escalation",
     "category": "code_debug",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T007",
-    "answer": "[API_FAILED] No client configured.",
-    "source": "api_escalation",
+    "answer": "def reverse_string(input_string):\n    \"\"\"\n    Reverses the order of characters in the input string.\n\n    Args:\n        input_string (str): The string to be reversed.\n\n    Returns:\n        str: The reversed string.\n    \"\"\"\n    return input_string[::-1]\n\n# Example Usage (Optional, for verification)\n# print(reverse_string(\"hello\"))",
+    "source": "local",
     "category": "code_gen",
-    "entropy": 99.0
+    "entropy": 0.0
   },
   {
     "task_id": "T008",
-    "answer": "[API_FAILED] No client configured.",
+    "answer": "Bob",
     "source": "api_escalation",
-    "category": "factual",
-    "entropy": 99.0
+    "category": "logic",
+    "entropy": 0.0
   }
 ]

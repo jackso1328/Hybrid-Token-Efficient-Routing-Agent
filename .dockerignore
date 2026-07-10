@@ -1,0 +1,4 @@
+*.gguf
+.git
+__pycache__
+output
