@@ -1,34 +1,10 @@
-[
-  {
-    "task_id": "T001",
-    "prompt": "What is the capital of France?"
-  },
-  {
-    "task_id": "T002",
-    "prompt": "A store has 240 items. It sells 30% in the morning and 25% of the remainder in the afternoon. How many items are left?"
-  },
-  {
-    "task_id": "T003",
-    "prompt": "Classify the sentiment of the following text: 'The movie started off great with stunning visuals but the ending was disappointing and felt rushed.'"
-  },
-  {
-    "task_id": "T004",
-    "prompt": "Summarize the following text in one sentence: The Industrial Revolution, which began in the late 18th century in Britain, transformed economies from agrarian to industrial, leading to urbanization, technological innovation, and significant changes in social structures. It introduced mechanized manufacturing, steam power, and new transportation systems such as railways, which revolutionized trade and daily life across Europe and eventually the world."
-  },
-  {
-    "task_id": "T005",
-    "prompt": "Extract all named entities (persons, organizations, locations, dates) from the following text: On January 15, 2024, Microsoft CEO Satya Nadella announced a new partnership with OpenAI at their headquarters in Redmond, Washington."
-  },
-  {
-    "task_id": "T006",
-    "prompt": "Find and fix the bug in this Python function:\n```python\ndef factorial(n):\n    if n == 0:\n        return 0\n    return n * factorial(n-1)\n```"
-  },
-  {
-    "task_id": "T007",
-    "prompt": "Write a Python function called `reverse_string` that takes a string as input and returns it reversed."
-  },
-  {
-    "task_id": "T008",
-    "prompt": "Alice, Bob, and Carol each have a different pet: a cat, a dog, and a fish. Alice does not have a cat. Bob does not have a dog. Carol has a fish. Who has the cat?"
-  }
+[ 
+{ "task_id": "practice-01", "prompt": "What is the capital of Australia, and what body of water is it near?" }, 
+{ "task_id": "practice-02", "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?" }, 
+{ "task_id": "practice-03", "prompt": "Classify the sentiment of this review: The battery life is great, but the screen scratches too easily." }, 
+{ "task_id": "practice-04", "prompt": "Summarize the following in exactly one sentence: [your own sample paragraph here]." }, 
+{ "task_id": "practice-05", "prompt": "Extract all named entities and their types from: Maria Sanchez joined Fireworks AI in Berlin last March." }, 
+{ "task_id": "practice-06", "prompt": "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it." }, 
+{ "task_id": "practice-07", "prompt": "Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?" }, 
+{ "task_id": "practice-08", "prompt": "Write a Python function that returns the second-largest number in a list, handling duplicates correctly." } 
 ]

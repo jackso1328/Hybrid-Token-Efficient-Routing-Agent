@@ -153,6 +153,12 @@ class LLMPromptCompressor:
 
         return text.strip()
 
+    def free_memory(self):
+        """Explicitly release the PyTorch model from RAM so Phase 2 can use the memory."""
+        global _compressor_model, _compressor_tokenizer
+        _compressor_model = None
+        _compressor_tokenizer = None
+
 
 if __name__ == "__main__":
     compressor = LLMPromptCompressor()
