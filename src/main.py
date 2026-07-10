@@ -2,8 +2,10 @@ import os
 import sys
 import json
 import time
-import concurrent.futures
-from concurrent.futures import TimeoutError
+
+def safe_str(text: str) -> str:
+    """Sanitize text for safe Windows console printing by replacing non-ASCII chars."""
+    return text.encode('ascii', 'replace').decode('ascii')
 
 # Ensure modules in src/ can be found
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -20,7 +22,9 @@ from verifiers import verify_math_answer, verify_code_answer, verify_ner_answer,
 
 class GemmaCascadeRouter:
     def __init__(self):
-        print("Initializing Gemma Cascade Router...")
+        print("=" * 60)
+        print("  Gemma Cascade Router — Initializing Pipeline")
+        print("=" * 60)
         self.local_engine = LocalGemmaEngine()
         self.classifier = TaskClassifier(self.local_engine)
         self.api_client = APIClient()
@@ -33,17 +37,18 @@ class GemmaCascadeRouter:
         
         # Token Recycling (Fragment Reuse Cache)
         self.token_cache = {}
+        print("=" * 60)
+        print("  Pipeline ready. Processing tasks...")
+        print("=" * 60)
 
     def _check_cache(self, prompt: str) -> str:
         """
         Simple exact-match and prefix-match token recycling.
         If we already solved an identical problem, reuse the answer.
         """
-        # Exact match
         if prompt in self.token_cache:
             return self.token_cache[prompt]
             
-        # Very rough similarity (if it's 90% the same prompt)
         for cached_prompt, cached_answer in self.token_cache.items():
             if cached_prompt[:50] == prompt[:50] and len(cached_prompt) == len(prompt):
                 return cached_answer
@@ -63,12 +68,14 @@ class GemmaCascadeRouter:
         prompt = task["prompt"]
         task_id = task["task_id"]
         
-        print(f"\n[{task_id}] Starting pipeline")
+        print(f"\n{'-' * 50}")
+        print(f"[{task_id}] Starting pipeline")
+        print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
         
         # 0. Token Recycling (Fragment reuse)
         cached_ans = self._check_cache(prompt)
         if cached_ans:
-            print(f"[{task_id}] Cache hit! Recycled tokens.")
+            print(f"[{task_id}] [CACHE] Hit! Recycled tokens.")
             return {
                 "task_id": task_id,
                 "answer": cached_ans,
@@ -79,8 +86,8 @@ class GemmaCascadeRouter:
         
         # 1. Classify
         task_type = self.classifier.classify(prompt)
-        budget = self.budget_manager.get_budget(task_type)
-        print(f"[{task_id}] Classified as: {task_type} (Budget: {budget})")
+        budget = self.budget_manager.get_budget(task_type, prompt)
+        print(f"[{task_id}] Category: {task_type} | Dynamic Budget: {budget} tokens")
         
         # Determine Grammars
         grammar = None
@@ -91,7 +98,6 @@ class GemmaCascadeRouter:
 
         # 2. Local Generation (The Brain)
         messages = [{"role": "user", "content": prompt}]
-        # Wild-Card: Thinking Mode locally for hard tasks
         if task_type in ["math", "logic", "code_gen", "code_debug"]:
             messages.insert(0, {"role": "system", "content": "You are a precise problem solver. You must enclose your step-by-step reasoning inside <think>...</think> tags before providing the final answer."})
             
@@ -104,8 +110,7 @@ class GemmaCascadeRouter:
         raw_local_answer = local_result["content"]
         entropy = local_result["entropy"]
         
-        # Track simulated usage (mock)
-        tokens_used = len(raw_local_answer.split()) # Rough estimate
+        tokens_used = len(raw_local_answer.split())
         self.budget_manager.record_usage(task_type, tokens_used)
         
         # 3. Deterministic Verification (The Safety Net)
@@ -129,48 +134,50 @@ class GemmaCascadeRouter:
             if not any(s in raw_local_answer.lower() for s in valid_sentiments):
                 verified = False
         elif task_type in ["logic", "factual"]:
-            # Self-Debate (Trust entropy. If uncertain, double check)
-            if entropy > 0.8: # High uncertainty
-                print(f"[{task_id}] High entropy ({entropy:.2f}). Triggering self-debate.")
+            if entropy > 0.8:
+                print(f"[{task_id}] [WARN] High entropy ({entropy:.2f}). Triggering self-debate...")
                 second_opinion = self.local_engine.chat_completion(messages, max_tokens=budget, temperature=0.5)["content"]
-                if second_opinion.split()[:5] != raw_local_answer.split()[:5]: # Very rough similarity check
-                    verified = False # Escalated!
+                if second_opinion.split()[:5] != raw_local_answer.split()[:5]:
+                    verified = False
                     
         # Force escalation if local model is dead or failed classification
         if task_type == "unknown" or "[MOCK]" in raw_local_answer:
             verified = False
 
-        print(f"[{task_id}] Verification passed: {verified}")
+        print(f"[{task_id}] Verification: {'PASSED' if verified else 'FAILED -> Escalating to API'}")
 
         # 4. Routing Decision
         final_answer = raw_local_answer
         source = "local"
         
         if verified and corrected_answer is None:
-            # Local answer is perfect
             final_answer = raw_local_answer
         elif corrected_answer is not None:
-            # We fixed it locally!
             final_answer = corrected_answer
             source = "local_corrected"
         else:
             # Verification failed. Escalate to API!
-            print(f"[{task_id}] Escalating to API...")
             source = "api_escalation"
             compressed_prompt = self.compressor.compress(prompt)
             api_difficulty = "hard" if task_type in ["math", "logic", "code_gen"] else "medium"
             
-            # Dual-Pass Refinement
+            # Use generous token budget for API (minimum 1024 to avoid truncation by reasoning models)
+            api_budget = max(budget, 1024)
+            
+            # Build task-type-specific API prompts for maximum token efficiency
             if task_type in ["code_debug", "code_gen"] and "[MOCK]" not in raw_local_answer:
                 api_prompt = f"Draft answer:\n{raw_local_answer}\n\nOriginal prompt:\n{compressed_prompt}\n\nFix the draft if it is wrong. Provide ONLY the final answer."
+            elif task_type == "ner":
+                api_prompt = f'{compressed_prompt}\nOutput ONLY a JSON object with keys "persons", "organizations", "locations", "dates". Each value is a list of strings. No explanation.'
+            elif task_type == "sentiment":
+                api_prompt = f"{compressed_prompt}\nOutput ONLY one word: positive, negative, neutral, or mixed."
             else:
                 api_prompt = f"{compressed_prompt}\nProvide ONLY the final answer. No reasoning."
                 
-            # Disable thinking trace on API to save tokens
             final_answer = self.api_client.generate_escalated_answer(
                 prompt=api_prompt,
                 task_difficulty=api_difficulty,
-                max_tokens=budget
+                max_tokens=api_budget
             )
             
         # 5. Answer Distillation
@@ -178,6 +185,9 @@ class GemmaCascadeRouter:
         
         # Cache the result for future Token Recycling
         self.token_cache[prompt] = distilled_answer
+        
+        print(f"[{task_id}] Source: {source}")
+        print(f"[{task_id}] Answer: {safe_str(distilled_answer[:120])}{'...' if len(distilled_answer) > 120 else ''}")
         
         return {
             "task_id": task_id,
@@ -199,46 +209,55 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         tasks = json.load(f)
         
     results = []
+    total_start = time.time()
     
-    # Timeout Guards: We strictly bound each task to 30 seconds
-    # (Increased from 12s to 30s to allow real local generation if it's slow)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        for task in tasks:
-            start_time = time.time()
-            try:
-                future = executor.submit(router.process_task, task)
-                result = future.result(timeout=30)
-                results.append(result)
-                print(f"[{task['task_id']}] Solved via {result.get('source', 'pipeline')} in {time.time() - start_time:.2f}s")
-            except TimeoutError:
-                print(f"[{task['task_id']}] TIMEOUT! Local model hung. Escalating immediately to API...")
-                # Emergency API Fallback if local model hangs
-                emergency_ans = router.api_client.generate_escalated_answer(task["prompt"], "hard", max_tokens=100)
-                results.append({
-                    "task_id": task["task_id"],
-                    "answer": router.distiller.distill(emergency_ans),
-                    "source": "api_escalation_timeout",
-                    "category": "unknown",
-                    "entropy": 0.0
-                })
-            except Exception as e:
-                print(f"[{task['task_id']}] ERROR: {e}")
-                results.append({
-                    "task_id": task["task_id"],
-                    "answer": f"Error processing task: {e}",
-                    "source": "error",
-                    "category": "unknown",
-                    "entropy": 0.0
-                })
+    for task in tasks:
+        start_time = time.time()
+        try:
+            result = router.process_task(task)
+            results.append(result)
+            elapsed = time.time() - start_time
+            print(f"[{task['task_id']}] Completed in {elapsed:.2f}s")
+        except Exception as e:
+            print(f"[{task['task_id']}] ERROR: {e}")
+            results.append({
+                "task_id": task["task_id"],
+                "answer": f"Error processing task: {e}",
+                "source": "error",
+                "category": "unknown",
+                "entropy": 0.0
+            })
                 
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
-        
-    print(f"\nFinished! Processed {len(tasks)} tasks.")
-    print(f"Results saved to {output_file}.")
+    
+    total_elapsed = time.time() - total_start
+
+    # Print summary table
+    print(f"\n{'=' * 60}")
+    print(f"  PIPELINE SUMMARY")
+    print(f"{'=' * 60}")
+    print(f"  {'Task':<8} {'Category':<12} {'Source':<20} {'Answer Preview'}")
+    print(f"  {'-'*8} {'-'*12} {'-'*20} {'-'*30}")
+    for r in results:
+        answer_preview = safe_str(r['answer'][:30].replace('\n', ' '))
+        print(f"  {r['task_id']:<8} {r.get('category','?'):<12} {r['source']:<20} {answer_preview}")
+    print(f"{'-' * 60}")
+    
+    local_count = sum(1 for r in results if r['source'] in ['local', 'local_corrected', 'cache_recycled'])
+    api_count = sum(1 for r in results if 'api' in r['source'])
+    blank_count = sum(1 for r in results if not r['answer'].strip())
+    
+    print(f"  Total tasks: {len(results)}")
+    print(f"  Local solves: {local_count} (zero API tokens)")
+    print(f"  API escalations: {api_count}")
+    print(f"  Blank answers: {blank_count}")
+    print(f"  Total runtime: {total_elapsed:.2f}s")
+    print(f"  Results saved to {output_file}")
+    print(f"{'=' * 60}")
 
 if __name__ == "__main__":
     run_pipeline()

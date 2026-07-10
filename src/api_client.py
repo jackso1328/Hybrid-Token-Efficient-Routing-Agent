@@ -33,15 +33,10 @@ class APIClient:
     def select_model(self, task_difficulty: str = "medium") -> str:
         """
         Selects the optimal model from ALLOWED_MODELS based on difficulty.
-        In testing mode, uses whatever is configured in ALLOWED_MODELS.
         """
         if not ALLOWED_MODELS:
-            # Fallback to a highly reliable free model on OpenRouter if config is empty
-            return "google/gemma-2-9b-it:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
+            return "tencent/hy3:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-26b-a4b-it"
             
-        # Simplistic selection: 
-        # For 'hard' tasks, pick the last model in the list (usually the biggest)
-        # For 'medium/easy', pick the first
         if task_difficulty == "hard":
             return ALLOWED_MODELS[-1]
         return ALLOWED_MODELS[0]
@@ -54,17 +49,14 @@ class APIClient:
             return "[API_FAILED] No client configured."
             
         model_name = self.select_model(task_difficulty)
+        print(f"  [API] Using model: {model_name} (difficulty: {task_difficulty}, max_tokens: {max_tokens})")
         
         # CHAIN OF DRAFT: Force the model to think minimally and output only the absolute answer
         system_prompt = """You are a token-efficiency system. Provide the final answer with absolute minimal reasoning. 
 Do not use conversational preamble like 'Here is the answer'. Keep output strictly necessary."""
 
         try:
-            # We specifically DO NOT use tools here because API tokens cost money.
-            # We just want the raw answer generated as cheaply as possible.
-            
             # For Fireworks, we strictly disable the thinking budget
-            # to prevent it from wasting tokens on hidden reasoning.
             extra_body = {"budget_tokens": 0} if not self.is_openrouter else None
             
             # OpenRouter extra headers
@@ -90,7 +82,12 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
                 
             response = self.client.chat.completions.create(**kwargs)
             content = response.choices[0].message.content
+
+            # Log usage if available
+            if hasattr(response, 'usage') and response.usage:
+                print(f"  [API] Response tokens: prompt={response.usage.prompt_tokens}, completion={response.usage.completion_tokens}")
+
             return content.strip() if content else ""
         except Exception as e:
-            print(f"API Call Failed: {e}")
+            print(f"  [API] Call Failed: {e}")
             return f"[API_ERROR] {str(e)}"
