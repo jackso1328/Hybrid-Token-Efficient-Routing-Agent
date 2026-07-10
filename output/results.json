@@ -1,58 +1,58 @@
 [
   {
-    "task_id": "T001",
-    "answer": "Paris",
+    "task_id": "practice-01",
+    "answer": "Canberra, and it is near the Murray River.",
     "source": "local",
     "category": "factual",
     "entropy": 0.0
   },
   {
-    "task_id": "T002",
-    "answer": "126",
+    "task_id": "practice-02",
+    "answer": "144",
     "source": "api_escalation",
     "category": "math",
     "entropy": 0.0
   },
   {
-    "task_id": "T003",
+    "task_id": "practice-03",
     "answer": "mixed",
     "source": "local",
     "category": "sentiment",
     "entropy": 0.0
   },
   {
-    "task_id": "T004",
-    "answer": "The Industrial Revolution, starting in the late 18th century in Britain, fundamentally transformed economies through mechanized manufacturing, new technologies like steam power and railways, and significant shifts in social structures.",
+    "task_id": "practice-04",
+    "answer": "Please provide the sample paragraph you would like me to summarize.",
     "source": "local",
     "category": "summarize",
     "entropy": 0.0
   },
   {
-    "task_id": "T005",
-    "answer": "{\"persons\":[\"Satya Nadella\"],\"organizations\":[\"Microsoft\",\"OpenAI\"],\"locations\":[\"Redmond\",\"Washington\"],\"dates\":[\"January 15, 2024\"]}",
+    "task_id": "practice-05",
+    "answer": "{\"persons\":[\"Maria Sanchez\"],\"organizations\":[\"Fireworks AI\"],\"locations\":[\"Berlin\"],\"dates\":[\"last March\"]}",
     "source": "local",
     "category": "ner",
     "entropy": 0.0
   },
   {
-    "task_id": "T006",
-    "answer": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n-1)",
+    "task_id": "practice-06",
+    "answer": "def get_max(nums): return max(nums)",
     "source": "api_escalation",
     "category": "code_debug",
     "entropy": 0.0
   },
   {
-    "task_id": "T007",
-    "answer": "def reverse_string(input_string):\n    \"\"\"\n    Reverses the order of characters in the input string.\n\n    Args:\n        input_string (str): The string to be reversed.\n\n    Returns:\n        str: The reversed string.\n    \"\"\"\n    return input_string[::-1]\n\n# Example Usage (Optional, for verification)\n# print(reverse_string(\"hello\"))",
+    "task_id": "practice-07",
+    "answer": "Sam owns the cat.",
     "source": "local",
-    "category": "code_gen",
+    "category": "logic",
     "entropy": 0.0
   },
   {
-    "task_id": "T008",
-    "answer": "Bob",
+    "task_id": "practice-08",
+    "answer": "def second_largest(lst):\n    u = set(lst)\n    return sorted(u)[-2] if len(u) > 1 else None",
     "source": "api_escalation",
-    "category": "logic",
+    "category": "code_gen",
     "entropy": 0.0
   }
 ]

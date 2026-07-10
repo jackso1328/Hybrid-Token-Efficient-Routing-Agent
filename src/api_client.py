@@ -7,12 +7,13 @@ from config import FIREWORKS_API_KEY, FIREWORKS_BASE_URL, OPENROUTER_API_KEY, OP
 
 class APIClient:
     """
-    Handles escalation to API models (Fireworks by default, OpenRouter for testing).
-    Implements Token Optimization techniques like Chain of Draft.
+    Handles escalation to API models.
+    In judging mode (FIREWORKS_API_KEY set): uses Fireworks AI exclusively.
+    In testing mode (only OPENROUTER_API_KEY set): uses OpenRouter.
     """
     def __init__(self):
-        # Prefer Fireworks if both exist, fallback to OpenRouter for testing
         if FIREWORKS_API_KEY:
+            # JUDGING MODE: Fireworks only, OpenRouter completely disabled
             self.client = OpenAI(
                 base_url=FIREWORKS_BASE_URL,
                 api_key=FIREWORKS_API_KEY,
@@ -20,6 +21,7 @@ class APIClient:
             self.is_openrouter = False
             print("API Client initialized using Fireworks AI.")
         elif OPENROUTER_API_KEY:
+            # TESTING MODE: OpenRouter for local development
             self.client = OpenAI(
                 base_url=OPENROUTER_BASE_URL,
                 api_key=OPENROUTER_API_KEY,
@@ -44,6 +46,7 @@ class APIClient:
     def generate_escalated_answer(self, prompt: str, task_difficulty: str = "medium", max_tokens: int = 500) -> str:
         """
         Calls the API using the Chain of Draft prompting strategy to minimize output tokens.
+        Will NOT fall back to OpenRouter if Fireworks fails during judging.
         """
         if not self.client:
             return "[API_FAILED] No client configured."
@@ -59,7 +62,7 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
             # For Fireworks, we strictly disable the thinking budget
             extra_body = {"budget_tokens": 0} if not self.is_openrouter else None
             
-            # OpenRouter extra headers
+            # OpenRouter extra headers (only in testing mode)
             extra_headers = {
                 "HTTP-Referer": "https://github.com/jackso1328/Hybrid-Token-Efficient-Routing-Agent",
                 "X-Title": "GemmaCascade Router"

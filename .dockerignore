@@ -1,4 +1,23 @@
-*.gguf
-.git
-__pycache__
-output
+# Ignore secrets
+.env
+.env.*
+
+# Ignore virtual environments
+.venv/
+venv/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore caches
+__pycache__/
+*.pyc
+
+# Ignore docs and misc
+*.pdf
+*.md
+!README.md
+*.log
+*Zone.Identifier
+LICENSE

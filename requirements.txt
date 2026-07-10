@@ -11,4 +11,3 @@ sentencepiece
 protobuf
 python-dotenv==1.0.1
 httpx==0.27.2
-psutil>=5.9.0
