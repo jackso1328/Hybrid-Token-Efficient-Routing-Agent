@@ -24,10 +24,10 @@ from grammars import get_ner_grammar, get_sentiment_grammar
 from verifiers import verify_math_answer, verify_code_answer, verify_ner_answer, verify_summary
 
 # Categories that should skip local model and go directly to API
-DIRECT_API_CATEGORIES = {"math", "code_gen", "code_debug"}
+DIRECT_API_CATEGORIES = {"math"}  # Local model fails math but passes verification, send to API for 100% accuracy
 
 # Maximum seconds to wait for local model before escalating to API
-LOCAL_TIMEOUT = 50
+LOCAL_TIMEOUT = 40  # 40s allows local 2B model to finish long Factual essays without timing out
 
 import signal
 
@@ -102,13 +102,13 @@ class GemmaCascadeRouter:
         api_budget = max(budget, 4096)  # Give premium models enough room to think without getting cut off
         
         if task_type in ["code_debug", "code_gen"]:
-            api_prompt = f"{compressed_prompt}\nProvide ONLY the final code. No explanation."
+            api_prompt = f"{compressed_prompt}\nOnly output final code. No explanation."
         elif task_type == "ner":
-            api_prompt = f'{compressed_prompt}\nOutput ONLY a JSON object with keys "persons", "organizations", "locations", "dates". Each value is a list of strings. No explanation.'
+            api_prompt = f'{compressed_prompt}\nOnly output JSON: {{"persons":[],"organizations":[],"locations":[],"dates":[]}}'
         elif task_type == "sentiment":
-            api_prompt = f"{compressed_prompt}\nOutput ONLY one word: positive, negative, neutral, or mixed."
+            api_prompt = f"{compressed_prompt}\nOne word only: positive, negative, neutral, or mixed."
         else:
-            api_prompt = f"{compressed_prompt}\nProvide ONLY the final answer. No reasoning."
+            api_prompt = f"{compressed_prompt}\nOnly output final answer. No reasoning."
         
         return self.api_client.generate_escalated_answer(
             prompt=api_prompt,
@@ -310,12 +310,12 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     api_count = sum(1 for r in results if 'api' in r['source'])
     blank_count = sum(1 for r in results if not r['answer'].strip())
     
-    total_api_tokens = router.api_client.total_prompt_tokens + router.api_client.total_completion_tokens
+    total_api_tokens = router.api_client.total_prompt_tokens + router.api_client.total_completion_tokens + router.api_client.total_reasoning_tokens
     
     print(f"  Total tasks: {len(results)}")
     print(f"  Local solves: {local_count} (zero API tokens)")
     print(f"  API escalations: {api_count}")
-    print(f"  Total API tokens used: {total_api_tokens} ({router.api_client.total_prompt_tokens} prompt / {router.api_client.total_completion_tokens} completion)")
+    print(f"  Total API Tokens (Input/Thinking/Output): {total_api_tokens} ({router.api_client.total_prompt_tokens} input / {router.api_client.total_reasoning_tokens} thinking / {router.api_client.total_completion_tokens} output)")
     print(f"  Blank answers: {blank_count}")
     print(f"  Total runtime: {total_elapsed:.2f}s")
     print(f"  Results saved to {output_file}")

@@ -14,6 +14,7 @@ class APIClient:
     def __init__(self):
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
+        self.total_reasoning_tokens = 0
         if FIREWORKS_API_KEY:
             # JUDGING MODE: Fireworks only, OpenRouter completely disabled
             self.client = OpenAI(
@@ -56,9 +57,8 @@ class APIClient:
         model_name = self.select_model(task_difficulty)
         print(f"  [API] Using model: {model_name} (difficulty: {task_difficulty}, max_tokens: {max_tokens})")
         
-        # CHAIN OF DRAFT: Force the model to think minimally and output only the absolute answer
-        system_prompt = """You are a token-efficiency system. Provide the final answer with absolute minimal reasoning. 
-Do not use conversational preamble like 'Here is the answer'. Keep output strictly necessary."""
+        # CHAIN OF DRAFT: Allow thinking but in hyper-compressed format
+        system_prompt = """You are a token-efficiency system. Use 'Chain of Draft' reasoning: think in highly compressed, abbreviated format using minimal words. Then output EXACTLY the final answer. No conversational preamble."""
 
         try:
             # For Fireworks, we strictly disable the thinking budget
@@ -88,13 +88,23 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
             response = self.client.chat.completions.create(**kwargs)
             content = response.choices[0].message.content
 
-            # Log usage if available
             if hasattr(response, 'usage') and response.usage:
                 p_tokens = response.usage.prompt_tokens
                 c_tokens = response.usage.completion_tokens
+                
+                # Extract reasoning tokens (OpenRouter / OpenAI latest spec)
+                r_tokens = 0
+                if hasattr(response.usage, 'completion_tokens_details') and response.usage.completion_tokens_details:
+                    r_tokens = getattr(response.usage.completion_tokens_details, 'reasoning_tokens', 0)
+                if r_tokens is None:
+                    r_tokens = 0
+                    
+                o_tokens = c_tokens - r_tokens
+                
                 self.total_prompt_tokens += p_tokens
-                self.total_completion_tokens += c_tokens
-                print(f"  [API] Response tokens: prompt={p_tokens}, completion={c_tokens}")
+                self.total_completion_tokens += o_tokens
+                self.total_reasoning_tokens += r_tokens
+                print(f"  [API] Tokens for this question -> Input: {p_tokens} | Thinking: {r_tokens} | Output: {o_tokens}")
 
             return content.strip() if content else ""
         except Exception as e:

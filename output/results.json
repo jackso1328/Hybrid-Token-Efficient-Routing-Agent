@@ -1,57 +1,155 @@
 [
   {
-    "task_id": "practice-01",
-    "answer": "Canberra, and it is near the Murray River.",
+    "task_id": "t-01",
+    "answer": "CRISPR-Cas9 is a genome editing tool that utilizes a bacterial adaptive immune system for targeted DNA cleavage. The mechanism involves the precise recognition and cutting of specific DNA sequences guided by RNA molecules.\n\n**Core Components:**\n\n1.  **Cas9 Enzyme:** This is a nuclease (an enzyme that cuts nucleic acids) that acts as the molecular \"scissors.\" It is guided to a specific location in the genome by the guide RNA.\n2.  **Guide RNA (gRNA):** In the standard CRISPR-Cas9 system, the guide RNA is a single chimeric RNA molecule that combines the functions of two naturally occurring RNAs:\n    *   **crRNA (CRISPR RNA):** This is the sequence that is complementary to the target DNA sequence. It contains the $\\sim$20 nucleotide sequence that dictates the specificity of the targeting.\n    *   **tracrRNA (trans-activating CRISPR RNA):** This RNA forms a scaffold structure that binds to the Cas9 protein, positioning it correctly for DNA binding.\n\n**Mechanism of Action:**\n\n1.  **Assembly:** The crRNA and tracrRNA are typically engineered or designed to form a single guide RNA (sgRNA) for use in genome editing.\n2.",
     "source": "local",
     "category": "factual",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-02",
-    "answer": "144",
-    "source": "api_escalation",
+    "task_id": "t-02",
+    "answer": "Crash Fault Tolerance (CFT) and Byzantine Fault Tolerance (BFT) address different types of faults in distributed systems.\n\n**Crash Fault Tolerance (CFT):**\nCFT assumes that the components (nodes) in the distributed system can only fail by stopping or crashing (i.e., they fail by stopping responding or halting execution). CFT protocols are designed to ensure that the system continues to operate correctly as long as a majority of the nodes remain operational and honest.\n\n*   **Fault Model:** Fail-stop or crash failures. Nodes can stop sending messages or stop responding.\n*   **Goal:** Ensure consistency and availability despite node crashes.\n*   **Examples:** Protocols like Paxos or Raft are typical examples of CFT algorithms.\n\n**Byzantine Fault Tolerance (BFT):**\nBFT assumes a much more severe fault model where some nodes can exhibit arbitrary, malicious, or unpredictable behavior. A Byzantine fault occurs when a faulty node can send conflicting, incorrect, or arbitrary information to different parts of the system, potentially attempting to deceive other nodes.\n\n*   **Fault Model:** Arbitrary failures, including crashes, arbitrary message delays, and malicious behavior (sending false information, lying, or actively trying to disrupt consensus).\n*   **Goal:** Ensure",
+    "source": "local",
+    "category": "factual",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-03",
+    "answer": "The Pauli Exclusion Principle states that no two identical fermions (particles with half-integer spin, such as electrons) can occupy the same quantum state simultaneously within a quantum system.\n\nThis principle prevents white dwarf stars from collapsing under their own gravity through **electron degeneracy pressure**.\n\n1. **Degeneracy:** As white dwarfs are extremely dense, the electrons are packed very closely together. Due to the Pauli Exclusion Principle, the electrons are forced into higher and higher energy states, even at relatively low temperatures.\n2. **Degeneracy Pressure:** This resistance to further compression, arising from the quantum mechanical nature of the electrons, is known as electron degeneracy pressure. This pressure acts outward, counteracting the inward force of gravity.\n3. **Stability:** This degeneracy pressure provides the necessary outward force to support the star against gravitational collapse, establishing a state of hydrostatic equilibrium for white dwarfs.",
+    "source": "local",
+    "category": "factual",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-04",
+    "answer": "225 miles",
+    "source": "api_direct",
     "category": "math",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-03",
+    "task_id": "t-05",
+    "answer": "12%",
+    "source": "api_direct",
+    "category": "math",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-06",
+    "answer": "531441",
+    "source": "api_direct",
+    "category": "math",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-07",
     "answer": "mixed",
     "source": "local",
     "category": "sentiment",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-04",
-    "answer": "Please provide the sample paragraph you would like me to summarize.",
+    "task_id": "t-08",
+    "answer": "positive",
+    "source": "local",
+    "category": "sentiment",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-09",
+    "answer": "neutral",
+    "source": "local",
+    "category": "sentiment",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-10",
+    "answer": "The James Webb Space Telescope observes the universe in the infrared spectrum to penetrate dust and study the formation of early galaxies.",
+    "source": "local",
+    "category": "factual",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-11",
+    "answer": "Machine learning algorithms depend on extensive, unbiased data, as the lack thereof can cause models to learn and perpetuate human prejudices, resulting in discriminatory automated decisions.",
     "source": "local",
     "category": "summarize",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-05",
-    "answer": "{\"persons\":[\"Maria Sanchez\"],\"organizations\":[\"Fireworks AI\"],\"locations\":[\"Berlin\"],\"dates\":[\"last March\"]}",
+    "task_id": "t-12",
+    "answer": "associated with reduced cardiovascular disease risk and increased longevity.",
     "source": "local",
+    "category": "summarize",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-13",
+    "answer": "{\"persons\":[\"Winston Churchill\"],\"organizations\":[\"House of Commons\",\"the House of Commons\"],\"locations\":[\"London\"],\"dates\":[\"June 4, 1940\"]}",
+    "source": "local_corrected",
     "category": "ner",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-06",
-    "answer": "def get_max(nums): return max(nums)",
-    "source": "api_escalation",
+    "task_id": "t-14",
+    "answer": "{\"persons\":[\"Satya Nadella\"],\"organizations\":[\"Microsoft\",\"AI\"],\"locations\":[\"Bangalore\"],\"dates\":[\"early 2025\"]}",
+    "source": "local_corrected",
+    "category": "ner",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-15",
+    "answer": "{\"persons\":[\"Dr. Chen\",\"Chen\"],\"organizations\":[\"World Health Organization\",\"The World Health Organization\"],\"locations\":[\"Geneva\"],\"dates\":[\"last Friday\"]}",
+    "source": "local_corrected",
+    "category": "ner",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-16",
+    "answer": "def reverse_string(s):\n    return s[::-1]",
+    "source": "local",
     "category": "code_debug",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-07",
-    "answer": "Sam owns the cat.",
+    "task_id": "t-17",
+    "answer": "def get_even_numbers(lst):\n    new_lst = []\n    for i in lst:\n        if i % 2 == 0:\n            new_lst.append(i)\n    return new_lst",
+    "source": "local",
+    "category": "code_debug",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-18",
+    "answer": "def append_to_list(val, my_list=None):\n    if my_list is None:\n        my_list = []\n    my_list.append(val)\n    return my_list",
+    "source": "local",
+    "category": "code_debug",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-19",
+    "answer": "Bob.",
     "source": "local",
     "category": "logic",
     "entropy": 0.0
   },
   {
-    "task_id": "practice-08",
-    "answer": "def second_largest(lst):\n    u = set(lst)\n    return sorted(u)[-2] if len(u) > 1 else None",
+    "task_id": "t-20",
+    "answer": "Yes",
     "source": "api_escalation",
+    "category": "logic",
+    "entropy": 99.0
+  },
+  {
+    "task_id": "t-21",
+    "answer": "import re\n\ndef is_palindrome(s):\n    \"\"\"\n    Checks if a string is a palindrome, ignoring spaces, punctuation, and case.\n    \"\"\"\n    # Remove spaces and punctuation, and convert to lowercase\n    cleaned_s = re.sub(r'[^a-zA-Z0-9]', '', s).lower()\n    \n    # Check if the cleaned string is equal to its reverse\n    return cleaned_s == cleaned_s[::-1]",
+    "source": "local",
+    "category": "code_gen",
+    "entropy": 0.0
+  },
+  {
+    "task_id": "t-22",
+    "answer": "def binary_search(sorted_list, target):\n    \"\"\"\n    Searches for a target in a sorted list using binary search.\n\n    Args:\n        sorted_list: A sorted list of elements.\n        target: The value to search for.\n\n    Returns:\n        The index of the target if found, otherwise -1.\n    \"\"\"\n    low = 0\n    high = len(sorted_list) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        if sorted_list[mid] == target:\n            return mid\n        elif sorted_list[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1",
+    "source": "local",
     "category": "code_gen",
     "entropy": 0.0
   }

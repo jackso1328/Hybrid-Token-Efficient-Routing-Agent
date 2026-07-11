@@ -1,10 +1,90 @@
-[ 
-{ "task_id": "practice-01", "prompt": "What is the capital of Australia, and what body of water is it near?" }, 
-{ "task_id": "practice-02", "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?" }, 
-{ "task_id": "practice-03", "prompt": "Classify the sentiment of this review: The battery life is great, but the screen scratches too easily." }, 
-{ "task_id": "practice-04", "prompt": "Summarize the following in exactly one sentence: [your own sample paragraph here]." }, 
-{ "task_id": "practice-05", "prompt": "Extract all named entities and their types from: Maria Sanchez joined Fireworks AI in Berlin last March." }, 
-{ "task_id": "practice-06", "prompt": "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it." }, 
-{ "task_id": "practice-07", "prompt": "Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?" }, 
-{ "task_id": "practice-08", "prompt": "Write a Python function that returns the second-largest number in a list, handling duplicates correctly." } 
+[
+  {
+    "task_id": "t-01",
+    "prompt": "Explain the exact mechanism of CRISPR-Cas9, detailing the roles of crRNA, tracrRNA, and the PAM sequence."
+  },
+  {
+    "task_id": "t-02",
+    "prompt": "Describe the difference between Byzantine Fault Tolerance and standard Crash Fault Tolerance in distributed systems."
+  },
+  {
+    "task_id": "t-03",
+    "prompt": "What is the Pauli Exclusion Principle and how does it prevent white dwarf stars from collapsing under their own gravity?"
+  },
+  {
+    "task_id": "t-04",
+    "prompt": "Train A leaves a station at 45 mph. Two hours later, Train B leaves on a parallel track at 75 mph. How far from the station does B catch A?"
+  },
+  {
+    "task_id": "t-05",
+    "prompt": "A merchant marks up goods by 40%. If he then offers a 20% discount on the marked price, what is his actual profit percentage?"
+  },
+  {
+    "task_id": "t-06",
+    "prompt": "If a bacteria population triples every 8 hours, how many times larger will the population be after exactly 4 days?"
+  },
+  {
+    "task_id": "t-07",
+    "prompt": "Classify sentiment: The visuals were absolutely breathtaking, but the convoluted plot and wooden acting made me regret buying a ticket."
+  },
+  {
+    "task_id": "t-08",
+    "prompt": "Classify sentiment: While some might find the interface slightly outdated, the software's unparalleled reliability and speed make it essential for our team."
+  },
+  {
+    "task_id": "t-09",
+    "prompt": "Classify sentiment: The restaurant was perfectly adequate, with standard portions and typical prices, leaving exactly zero lasting impression."
+  },
+  {
+    "task_id": "t-10",
+    "prompt": "Summarize in exactly one sentence: The James Webb Space Telescope operates primarily in the infrared spectrum, allowing it to see through dense dust clouds that obscure visible light. This capability enables astronomers to observe the formation of some of the earliest galaxies in the universe."
+  },
+  {
+    "task_id": "t-11",
+    "prompt": "Summarize in exactly one sentence: Machine learning algorithms require vast amounts of curated data to function accurately. Without diverse and unbiased datasets, these models can inadvertently learn and amplify human prejudices, leading to discriminatory outcomes in automated decision-making systems."
+  },
+  {
+    "task_id": "t-12",
+    "prompt": "Summarize in exactly one sentence: The Mediterranean diet emphasizes plant-based foods, healthy fats like olive oil, and moderate consumption of fish and poultry. Numerous longitudinal studies have linked this eating pattern to reduced risks of cardiovascular disease and increased overall longevity."
+  },
+  {
+    "task_id": "t-13",
+    "prompt": "Extract entities and their types: Prime Minister Winston Churchill delivered his speech in London on June 4, 1940, addressing the House of Commons."
+  },
+  {
+    "task_id": "t-14",
+    "prompt": "Extract entities and their types: Satya Nadella, CEO of Microsoft, announced a new AI research center in Bangalore that will open in early 2025."
+  },
+  {
+    "task_id": "t-15",
+    "prompt": "Extract entities and their types: The World Health Organization dispatched Dr. Chen to Geneva last Friday to coordinate the international response."
+  },
+  {
+    "task_id": "t-16",
+    "prompt": "Fix the bug in this Python code: \ndef reverse_string(s):\n    return s.reverse()"
+  },
+  {
+    "task_id": "t-17",
+    "prompt": "Fix the bug in this Python code: \ndef get_even_numbers(lst):\n    for i in lst:\n        if i % 2 != 0:\n            lst.remove(i)\n    return lst"
+  },
+  {
+    "task_id": "t-18",
+    "prompt": "Fix the bug in this Python code: \ndef append_to_list(val, my_list=[]):\n    my_list.append(val)\n    return my_list"
+  },
+  {
+    "task_id": "t-19",
+    "prompt": "Alice is taller than Bob but shorter than Charlie. Dave is taller than Charlie. Who is the shortest person?"
+  },
+  {
+    "task_id": "t-20",
+    "prompt": "If all bloops are razzies and all razzies are lazzies, are all bloops definitely lazzies?"
+  },
+  {
+    "task_id": "t-21",
+    "prompt": "Write a Python function 'is_palindrome' that checks if a string is a palindrome, ignoring spaces, punctuation, and case."
+  },
+  {
+    "task_id": "t-22",
+    "prompt": "Write a Python function 'binary_search' that returns the index of a target in a sorted list, or -1 if not found, in O(log N) time."
+  }
 ]
