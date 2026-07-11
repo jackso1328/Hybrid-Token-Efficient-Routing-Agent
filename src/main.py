@@ -13,7 +13,7 @@ def safe_str(text: str) -> str:
 # Ensure modules in src/ can be found
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config import INPUT_PATH, OUTPUT_PATH
+from config import INPUT_PATH, OUTPUT_PATH, REASONLITE_MODEL_PATH
 from local_engine import LocalGemmaEngine
 from classifier import TaskClassifier
 from api_client import APIClient
@@ -24,10 +24,10 @@ from grammars import get_ner_grammar, get_sentiment_grammar
 from verifiers import verify_math_answer, verify_code_answer, verify_ner_answer, verify_summary
 
 # Categories that should skip local model and go directly to API
-DIRECT_API_CATEGORIES = {"math"}  # Local model fails math but passes verification, send to API for 100% accuracy
+DIRECT_API_CATEGORIES = set()  # All categories now handled locally (math goes to ReasonLite in Phase 3)
 
 # Maximum seconds to wait for local model before escalating to API
-LOCAL_TIMEOUT = 40  # 40s allows local 2B model to finish long Factual essays without timing out
+LOCAL_TIMEOUT = 65  # Give the local model exactly the time it needs to finish long Factual essays without timing out
 
 import signal
 
@@ -253,7 +253,10 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         
     with open(input_file, "r") as f:
         tasks = json.load(f)
-        
+
+    # ════════════════════════════════════════════
+    # PHASE 1: Pre-computing Prompt Compression
+    # ════════════════════════════════════════════
     print(f"\n{'=' * 60}")
     print("  PHASE 1: Pre-computing Prompt Compression")
     print(f"{'=' * 60}")
@@ -264,13 +267,24 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     compressor.free_memory()
     del compressor
     gc.collect()
-        
+
+    # Separate math tasks from general tasks
+    general_tasks = [t for t in tasks if not _is_math_task(t["prompt"])]
+    math_tasks = [t for t in tasks if _is_math_task(t["prompt"])]
+    print(f"\n  Task split: {len(general_tasks)} general + {len(math_tasks)} math")
+
+    # ════════════════════════════════════════════
+    # PHASE 2: General Intelligence (Gemma)
+    # ════════════════════════════════════════════
+    print(f"\n{'=' * 60}")
+    print("  PHASE 2: General Intelligence (Gemma)")
+    print(f"{'=' * 60}")
     router = GemmaCascadeRouter()
         
     results = []
     total_start = time.time()
     
-    for task in tasks:
+    for task in general_tasks:
         start_time = time.time()
         try:
             result = router.process_task(task)
@@ -286,7 +300,42 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
                 "category": "unknown",
                 "entropy": 0.0
             })
-                
+
+    # ════════════════════════════════════════════
+    # PHASE 3: Mathematical Reasoning (ReasonLite)
+    # ════════════════════════════════════════════
+    if math_tasks:
+        print(f"\n{'=' * 60}")
+        print("  PHASE 3: Mathematical Reasoning (ReasonLite 0.6B)")
+        print(f"{'=' * 60}")
+        print("  Unloading Gemma from RAM...")
+        router.local_engine.free_model()
+        gc.collect()
+
+        print(f"  Loading ReasonLite from {REASONLITE_MODEL_PATH}...")
+        router.local_engine.reload_model(REASONLITE_MODEL_PATH, n_ctx=1024, n_threads=4)
+
+        for task in math_tasks:
+            start_time = time.time()
+            try:
+                result = _process_math_task(router, task)
+                results.append(result)
+                elapsed = time.time() - start_time
+                print(f"[{task['task_id']}] Completed in {elapsed:.2f}s")
+            except Exception as e:
+                print(f"[{task['task_id']}] ERROR: {e}")
+                results.append({
+                    "task_id": task["task_id"],
+                    "answer": f"Error processing task: {e}",
+                    "source": "error",
+                    "category": "math",
+                    "entropy": 0.0
+                })
+
+    # Sort results back into original task_id order
+    task_order = {t["task_id"]: i for i, t in enumerate(tasks)}
+    results.sort(key=lambda r: task_order.get(r["task_id"], 999))
+
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         
@@ -306,7 +355,7 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         print(f"  {r['task_id']:<8} {r.get('category','?'):<12} {r['source']:<20} {answer_preview}")
     print(f"{'-' * 60}")
     
-    local_count = sum(1 for r in results if r['source'] in ['local', 'local_corrected', 'cache_recycled'])
+    local_count = sum(1 for r in results if r['source'] in ['local', 'local_corrected', 'local_reasonlite', 'cache_recycled'])
     api_count = sum(1 for r in results if 'api' in r['source'])
     blank_count = sum(1 for r in results if not r['answer'].strip())
     
@@ -320,6 +369,74 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     print(f"  Total runtime: {total_elapsed:.2f}s")
     print(f"  Results saved to {output_file}")
     print(f"{'=' * 60}")
+
+
+def _is_math_task(prompt: str) -> bool:
+    """Quick heuristic to detect math tasks before the classifier runs."""
+    math_signals = [
+        "how far", "how many", "calculate", "what is the", "profit percentage",
+        "mph", "speed", "distance", "population", "triples", "doubles",
+        "marks up", "discount", "percentage", "times larger", "bacteria",
+        "interest", "compound", "equation", "solve for", "probability"
+    ]
+    prompt_lower = prompt.lower()
+    return any(signal in prompt_lower for signal in math_signals)
+
+
+def _process_math_task(router, task: dict) -> dict:
+    """
+    Process a math task using the ReasonLite model.
+    ReasonLite is a reasoning model — we let it think in <think> tags,
+    then extract only the final answer.
+    """
+    prompt = task["prompt"]
+    task_id = task["task_id"]
+
+    print(f"\n{'-' * 50}")
+    print(f"[{task_id}] Starting math pipeline (ReasonLite)")
+    print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
+
+    messages = [
+        {"role": "system", "content": "You are a precise math solver. Think step-by-step inside <think>...</think> tags, then output ONLY the final numerical answer or short answer after the tags."},
+        {"role": "user", "content": prompt}
+    ]
+
+    # Give ReasonLite enough tokens to reason through the math
+    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=512)
+
+    if local_result is None:
+        # Timeout — fall back to API
+        print(f"[{task_id}] [TIMEOUT] ReasonLite exceeded {LOCAL_TIMEOUT}s -> Escalating to API")
+        final_answer = router._escalate_to_api(task, "math", 4096)
+        source = "api_escalation"
+    else:
+        raw_answer = local_result["content"]
+        # Strip <think> blocks to get only the final answer
+        final_answer = re.sub(r'<think>.*?(?:</think>|$)\s*', '', raw_answer, flags=re.DOTALL).strip()
+
+        if not final_answer:
+            # Model only produced thinking with no final answer — escalate
+            print(f"[{task_id}] [EMPTY] ReasonLite produced no final answer -> Escalating to API")
+            final_answer = router._escalate_to_api(task, "math", 4096)
+            source = "api_escalation"
+        else:
+            source = "local_reasonlite"
+            print(f"[{task_id}] ReasonLite solved locally!")
+
+    # Distill
+    distilled = router.distiller.distill(final_answer)
+
+    print(f"[{task_id}] Source: {source}")
+    print(f"[{task_id}] Answer: {safe_str(distilled[:120])}{'...' if len(distilled) > 120 else ''}")
+
+    return {
+        "task_id": task_id,
+        "answer": distilled,
+        "source": source,
+        "category": "math",
+        "entropy": 0.0
+    }
+
 
 if __name__ == "__main__":
     run_pipeline()

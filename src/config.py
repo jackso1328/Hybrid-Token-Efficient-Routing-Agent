@@ -38,6 +38,15 @@ else:
         gguf_files = glob.glob(os.path.join(PROJECT_ROOT, "models", "*.gguf"))
     LOCAL_MODEL_PATH = gguf_files[0] if gguf_files else os.path.join(PROJECT_ROOT, _model_name)
 
+# The ReasonLite 0.6B model for math-specific tasks
+_reasonlite_name = "ReasonLite-0.6B.Q4_K_M.gguf"
+_reasonlite_in_root = os.path.join(PROJECT_ROOT, _reasonlite_name)
+if os.path.exists(_reasonlite_in_root):
+    REASONLITE_MODEL_PATH = _reasonlite_in_root
+else:
+    # In Docker it will be at /app/ReasonLite-0.6B.Q4_K_M.gguf
+    REASONLITE_MODEL_PATH = os.path.join(PROJECT_ROOT, _reasonlite_name)
+
 if os.environ.get("IN_DOCKER") == "1":
     INPUT_PATH = "/input/tasks.json"
     OUTPUT_PATH = "/output/results.json"

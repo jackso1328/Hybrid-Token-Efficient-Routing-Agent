@@ -14,8 +14,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download the spacy model during build
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
 
+# Pre-download the LLMLingua-2 Hugging Face model so it doesn't freeze at runtime!
+RUN python -c "from transformers import AutoTokenizer, AutoModelForTokenClassification; model_name='microsoft/llmlingua-2-xlm-roberta-large-meetingbank'; AutoTokenizer.from_pretrained(model_name); AutoModelForTokenClassification.from_pretrained(model_name)"
+
 # Copy the Gemma model (3.4 GB - separate layer for caching)
 COPY gemma-4-E2B-it-Q4_K_M.gguf .
+
+# Copy the ReasonLite math model (484 MB - separate layer for caching)
+COPY ReasonLite-0.6B.Q4_K_M.gguf .
 
 # Copy the rest of the application
 COPY . .

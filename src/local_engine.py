@@ -67,6 +67,26 @@ class LocalGemmaEngine:
             traceback.print_exc()
             print("The router will fall back to API.")
 
+    def free_model(self):
+        """Release the GGUF model from RAM so another model can be loaded."""
+        if self.llm is not None:
+            del self.llm
+            self.llm = None
+            self.is_loaded = False
+            import gc
+            gc.collect()
+            print("Local model unloaded from RAM.")
+
+    def reload_model(self, model_path: str, n_ctx: int = None, n_threads: int = None):
+        """Free the current model and load a different one."""
+        self.free_model()
+        self.model_path = model_path
+        if n_ctx is not None:
+            self.n_ctx = n_ctx
+        if n_threads is not None:
+            self.n_threads = n_threads
+        self._load_model()
+
     def generate(self, prompt: str, max_tokens: int = 256, temperature: float = 0.1) -> Dict[str, Any]:
         """
         Raw text completion — used by verifiers (math, format) for simple tasks
