@@ -21,8 +21,8 @@ except ImportError:
 # ──────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# The local Gemma 4 E4B model — check both possible locations
-_model_name = "gemma-4-E4B-it-Q4_K_M.gguf"
+# The local Gemma 4 E2B model — check both possible locations
+_model_name = "gemma-4-E2B-it-Q4_K_M.gguf"
 _model_in_root = os.path.join(PROJECT_ROOT, _model_name)
 _model_in_models = os.path.join(PROJECT_ROOT, "models", _model_name.lower().replace("-", "_"))
 
@@ -31,11 +31,11 @@ if os.path.exists(_model_in_root):
 elif os.path.exists(_model_in_models):
     LOCAL_MODEL_PATH = _model_in_models
 else:
-    # Try a glob to find any .gguf file
+    # Try a glob to find any gemma .gguf file (exclude ReasonLite)
     import glob
-    gguf_files = glob.glob(os.path.join(PROJECT_ROOT, "*.gguf"))
+    gguf_files = [f for f in glob.glob(os.path.join(PROJECT_ROOT, "*.gguf")) if "ReasonLite" not in f]
     if not gguf_files:
-        gguf_files = glob.glob(os.path.join(PROJECT_ROOT, "models", "*.gguf"))
+        gguf_files = [f for f in glob.glob(os.path.join(PROJECT_ROOT, "models", "*.gguf")) if "ReasonLite" not in f]
     LOCAL_MODEL_PATH = gguf_files[0] if gguf_files else os.path.join(PROJECT_ROOT, _model_name)
 
 # The ReasonLite 0.6B model for math-specific tasks
