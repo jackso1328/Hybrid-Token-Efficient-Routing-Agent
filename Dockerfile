@@ -20,10 +20,11 @@ COPY gemma-4-E2B-it-Q4_K_M.gguf .
 # Copy the rest of the application
 COPY . .
 
-# Ensure input/output directories exist
-RUN mkdir -p /app/input /app/output
+# Ensure absolute input/output directories exist for the hackathon harness
+RUN mkdir -p /input /output
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV IN_DOCKER=1
 
 CMD ["python", "src/main.py"]

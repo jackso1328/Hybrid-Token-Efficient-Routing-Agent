@@ -38,8 +38,12 @@ else:
         gguf_files = glob.glob(os.path.join(PROJECT_ROOT, "models", "*.gguf"))
     LOCAL_MODEL_PATH = gguf_files[0] if gguf_files else os.path.join(PROJECT_ROOT, _model_name)
 
-INPUT_PATH = os.path.join(PROJECT_ROOT, "input", "tasks.json")
-OUTPUT_PATH = os.path.join(PROJECT_ROOT, "output", "results.json")
+if os.environ.get("IN_DOCKER") == "1":
+    INPUT_PATH = "/input/tasks.json"
+    OUTPUT_PATH = "/output/results.json"
+else:
+    INPUT_PATH = os.path.join(PROJECT_ROOT, "input", "tasks.json")
+    OUTPUT_PATH = os.path.join(PROJECT_ROOT, "output", "results.json")
 
 # ──────────────────────────────────────────────
 # API Configuration (Supports Fireworks + OpenRouter)
