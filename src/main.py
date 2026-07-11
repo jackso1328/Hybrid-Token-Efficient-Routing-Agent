@@ -29,6 +29,14 @@ DIRECT_API_CATEGORIES = {"math", "code_gen", "code_debug"}
 # Maximum seconds to wait for local model before escalating to API
 LOCAL_TIMEOUT = 50
 
+import signal
+
+class TimeoutException(Exception):
+    pass
+
+def _timeout_handler(signum, frame):
+    raise TimeoutException("Local model timeout")
+
 class GemmaCascadeRouter:
     def __init__(self):
         print("=" * 60)
@@ -65,27 +73,27 @@ class GemmaCascadeRouter:
 
     def _run_local_with_timeout(self, messages, grammar, max_tokens):
         """
-        Run local model generation with a timeout.
-        If the model takes longer than LOCAL_TIMEOUT seconds, returns None
-        so the caller can escalate to the API instead.
+        Run local model generation with a timeout using signal.alarm to prevent C++ segfaults.
+        If the model takes longer than LOCAL_TIMEOUT seconds, returns None.
         """
-        result = [None]
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(LOCAL_TIMEOUT)
         
-        def target():
-            result[0] = self.local_engine.chat_completion(
+        try:
+            result = self.local_engine.chat_completion(
                 messages=messages,
                 grammar=grammar,
                 max_tokens=max_tokens
             )
-        
-        thread = threading.Thread(target=target)
-        thread.start()
-        thread.join(timeout=LOCAL_TIMEOUT)
-        
-        if thread.is_alive():
-            return None  # Timed out
-        
-        return result[0]
+            return result
+        except TimeoutException:
+            return None
+        except Exception as e:
+            print(f"  [ERROR] Local generation failed: {e}")
+            return None
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
 
     def _escalate_to_api(self, task, task_type, budget):
         """Helper to send a task directly to the API with category-specific prompts."""
