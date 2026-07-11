@@ -5,6 +5,8 @@ import time
 import re
 import gc
 import threading
+import subprocess
+import tempfile
 
 def safe_str(text: str) -> str:
     """Sanitize text for safe Windows console printing by replacing non-ASCII chars."""
@@ -13,7 +15,7 @@ def safe_str(text: str) -> str:
 # Ensure modules in src/ can be found
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config import INPUT_PATH, OUTPUT_PATH, REASONLITE_MODEL_PATH
+from config import INPUT_PATH, OUTPUT_PATH
 from local_engine import LocalGemmaEngine
 from classifier import TaskClassifier
 from api_client import APIClient
@@ -24,7 +26,7 @@ from grammars import get_ner_grammar, get_sentiment_grammar
 from verifiers import verify_math_answer, verify_code_answer, verify_ner_answer, verify_summary
 
 # Categories that should skip local model and go directly to API
-DIRECT_API_CATEGORIES = set()  # All categories now handled locally (math goes to ReasonLite in Phase 3)
+DIRECT_API_CATEGORIES = set()  # All categories handled locally (math uses Code-as-Reasoning)
 
 # Maximum seconds to wait for local model before escalating to API
 LOCAL_TIMEOUT = 65  # Give the local model exactly the time it needs to finish long Factual essays without timing out
@@ -268,26 +270,25 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     del compressor
     gc.collect()
 
-    # Separate math tasks from general tasks
-    general_tasks = [t for t in tasks if not _is_math_task(t["prompt"])]
-    math_tasks = [t for t in tasks if _is_math_task(t["prompt"])]
-    print(f"\n  Task split: {len(general_tasks)} general + {len(math_tasks)} math")
-
     # ════════════════════════════════════════════
-    # PHASE 2: General Intelligence (Gemma)
+    # PHASE 2: Local Intelligence (Gemma + Code-as-Reasoning)
     # ════════════════════════════════════════════
     print(f"\n{'=' * 60}")
-    print("  PHASE 2: General Intelligence (Gemma)")
+    print("  PHASE 2: Local Intelligence (Gemma + Code-as-Reasoning)")
     print(f"{'=' * 60}")
     router = GemmaCascadeRouter()
         
     results = []
     total_start = time.time()
     
-    for task in general_tasks:
+    for task in tasks:
         start_time = time.time()
         try:
-            result = router.process_task(task)
+            # Route math tasks through Code-as-Reasoning (PAL)
+            if _is_math_task(task["prompt"]):
+                result = _process_math_with_code(router, task)
+            else:
+                result = router.process_task(task)
             results.append(result)
             elapsed = time.time() - start_time
             print(f"[{task['task_id']}] Completed in {elapsed:.2f}s")
@@ -300,41 +301,6 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
                 "category": "unknown",
                 "entropy": 0.0
             })
-
-    # ════════════════════════════════════════════
-    # PHASE 3: Mathematical Reasoning (ReasonLite)
-    # ════════════════════════════════════════════
-    if math_tasks:
-        print(f"\n{'=' * 60}")
-        print("  PHASE 3: Mathematical Reasoning (ReasonLite 0.6B)")
-        print(f"{'=' * 60}")
-        print("  Unloading Gemma from RAM...")
-        router.local_engine.free_model()
-        gc.collect()
-
-        print(f"  Loading ReasonLite from {REASONLITE_MODEL_PATH}...")
-        router.local_engine.reload_model(REASONLITE_MODEL_PATH, n_ctx=2048, n_threads=4)
-
-        for task in math_tasks:
-            start_time = time.time()
-            try:
-                result = _process_math_task(router, task)
-                results.append(result)
-                elapsed = time.time() - start_time
-                print(f"[{task['task_id']}] Completed in {elapsed:.2f}s")
-            except Exception as e:
-                print(f"[{task['task_id']}] ERROR: {e}")
-                results.append({
-                    "task_id": task["task_id"],
-                    "answer": f"Error processing task: {e}",
-                    "source": "error",
-                    "category": "math",
-                    "entropy": 0.0
-                })
-
-    # Sort results back into original task_id order
-    task_order = {t["task_id"]: i for i, t in enumerate(tasks)}
-    results.sort(key=lambda r: task_order.get(r["task_id"], 999))
 
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -355,7 +321,7 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         print(f"  {r['task_id']:<8} {r.get('category','?'):<12} {r['source']:<20} {answer_preview}")
     print(f"{'-' * 60}")
     
-    local_count = sum(1 for r in results if r['source'] in ['local', 'local_corrected', 'local_reasonlite', 'cache_recycled'])
+    local_count = sum(1 for r in results if r['source'] in ['local', 'local_corrected', 'local_pal', 'cache_recycled'])
     api_count = sum(1 for r in results if 'api' in r['source'])
     blank_count = sum(1 for r in results if not r['answer'].strip())
     
@@ -401,62 +367,132 @@ def _is_math_task(prompt: str) -> bool:
     return has_strong_signal and has_numbers and not is_excluded
 
 
-def _process_math_task(router, task: dict) -> dict:
+def _execute_python_code(code: str, timeout: int = 10) -> str:
     """
-    Process a math task using the ReasonLite model.
-    Uses a concise Chain-of-Draft prompt to get fast, accurate answers.
+    Execute Python code in a sandboxed subprocess and capture stdout.
+    Returns the printed output, or None if execution fails.
+    """
+    # Write code to a temporary file
+    tmp_path = os.path.join(tempfile.gettempdir(), "math_solver.py")
+    with open(tmp_path, "w") as f:
+        f.write(code)
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+        else:
+            if result.stderr:
+                print(f"    [CODE ERROR] {result.stderr.strip()[:200]}")
+            return None
+    except subprocess.TimeoutExpired:
+        print(f"    [CODE TIMEOUT] Script exceeded {timeout}s")
+        return None
+    except Exception as e:
+        print(f"    [CODE EXEC ERROR] {e}")
+        return None
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
+def _process_math_with_code(router, task: dict) -> dict:
+    """
+    Program-Aided Language Model (PAL) for math tasks.
+    1. Ask Gemma to write a Python script that solves the problem.
+    2. Execute the script locally.
+    3. Capture the printed output as the answer.
+    If the code fails, retry once. If it still fails, fall back to API.
     """
     prompt = task["prompt"]
     task_id = task["task_id"]
-
+    
     print(f"\n{'-' * 50}")
-    print(f"[{task_id}] Starting math pipeline (ReasonLite)")
+    print(f"[{task_id}] Starting math pipeline (Code-as-Reasoning)")
     print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
 
+    PAL_SYSTEM_PROMPT = """You are a math solver that writes Python code. Given a math word problem, write a short Python script that calculates the answer and prints ONLY the final answer.
+
+Rules:
+- Use only basic Python (no imports needed for simple math).
+- Use print() to output ONLY the final numerical answer.
+- Do NOT print explanations, labels, or units — just the number or short answer.
+- For example, print(225) not print("225 miles").
+
+Output ONLY the Python code, nothing else. No markdown, no backticks, no explanation."""
+
     messages = [
-        {"role": "system", "content": "Solve the math problem. Show brief work, then give the final answer on its own line starting with 'ANSWER: '."},
+        {"role": "system", "content": PAL_SYSTEM_PROMPT},
         {"role": "user", "content": prompt}
     ]
 
-    # ReasonLite is tiny (0.6B) — keep tokens small for speed, 256 is plenty for math
-    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=256)
-
-    if local_result is None:
-        print(f"[{task_id}] [TIMEOUT] ReasonLite exceeded {LOCAL_TIMEOUT}s -> Escalating to API")
-        final_answer = router._escalate_to_api(task, "math", 4096)
-        source = "api_escalation"
-    else:
-        raw_answer = local_result["content"]
-        # Strip <think> blocks if present
-        cleaned = re.sub(r'<think>.*?(?:</think>|$)\s*', '', raw_answer, flags=re.DOTALL).strip()
+    # Attempt 1: Ask Gemma to write the code
+    MAX_ATTEMPTS = 2
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        print(f"  [PAL] Attempt {attempt}: Asking Gemma to write Python code...")
+        local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=256)
         
-        # Try to extract the ANSWER: line
-        answer_match = re.search(r'ANSWER:\s*(.+)', cleaned, re.IGNORECASE)
-        if answer_match:
-            final_answer = answer_match.group(1).strip()
-        else:
-            # Fall back to the last non-empty line (usually the final answer)
-            lines = [l.strip() for l in cleaned.split('\n') if l.strip()]
-            final_answer = lines[-1] if lines else ""
-
-        if not final_answer:
-            print(f"[{task_id}] [EMPTY] ReasonLite produced no final answer -> Escalating to API")
-            final_answer = router._escalate_to_api(task, "math", 4096)
-            source = "api_escalation"
-        else:
-            source = "local_reasonlite"
-            print(f"[{task_id}] ReasonLite solved locally!")
-
-    # Distill
+        if local_result is None:
+            print(f"  [PAL] Gemma timed out generating code.")
+            continue
+        
+        raw_code = local_result["content"]
+        
+        # Strip markdown code fences if present
+        code = re.sub(r'^```python\s*', '', raw_code, flags=re.MULTILINE)
+        code = re.sub(r'^```\s*$', '', code, flags=re.MULTILINE)
+        code = code.strip()
+        
+        if not code:
+            print(f"  [PAL] Empty code generated.")
+            continue
+        
+        print(f"  [PAL] Generated code:\n    {code[:150].replace(chr(10), chr(10) + '    ')}")
+        
+        # Execute the code
+        output = _execute_python_code(code)
+        
+        if output:
+            # Clean up the output — take just the last printed line
+            lines = [l.strip() for l in output.split('\n') if l.strip()]
+            final_answer = lines[-1] if lines else output
+            print(f"  [PAL] Python output: {final_answer}")
+            
+            distilled = router.distiller.distill(final_answer)
+            print(f"[{task_id}] Source: local_pal")
+            print(f"[{task_id}] Answer: {safe_str(distilled[:120])}")
+            
+            return {
+                "task_id": task_id,
+                "answer": distilled,
+                "source": "local_pal",
+                "category": "math",
+                "entropy": 0.0
+            }
+        
+        # If code failed, add error context for retry
+        if attempt < MAX_ATTEMPTS:
+            print(f"  [PAL] Code execution failed. Retrying with error feedback...")
+            messages.append({"role": "assistant", "content": raw_code})
+            messages.append({"role": "user", "content": "That code had an error. Please write a corrected Python script that solves the problem and prints only the final numerical answer."})
+    
+    # All attempts failed — fall back to API
+    print(f"[{task_id}] [PAL FAILED] All code attempts failed -> Escalating to API")
+    final_answer = router._escalate_to_api(task, "math", 4096)
     distilled = router.distiller.distill(final_answer)
-
-    print(f"[{task_id}] Source: {source}")
-    print(f"[{task_id}] Answer: {safe_str(distilled[:120])}{'...' if len(distilled) > 120 else ''}")
-
+    
+    print(f"[{task_id}] Source: api_escalation")
+    print(f"[{task_id}] Answer: {safe_str(distilled[:120])}")
+    
     return {
         "task_id": task_id,
         "answer": distilled,
-        "source": source,
+        "source": "api_escalation",
         "category": "math",
         "entropy": 0.0
     }

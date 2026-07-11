@@ -20,9 +20,6 @@ RUN python -c "from transformers import AutoTokenizer, AutoModelForTokenClassifi
 # Copy the Gemma model (3.4 GB - separate layer for caching)
 COPY gemma-4-E2B-it-Q4_K_M.gguf .
 
-# Copy the ReasonLite math model (484 MB - separate layer for caching)
-COPY ReasonLite-0.6B.Q4_K_M.gguf .
-
 # Copy the rest of the application
 COPY . .
 
