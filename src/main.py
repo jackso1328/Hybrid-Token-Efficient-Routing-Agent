@@ -416,19 +416,46 @@ def _process_math_with_code(router, task: dict) -> dict:
     print(f"[{task_id}] Starting math pipeline (Code-as-Reasoning)")
     print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
 
-    PAL_SYSTEM_PROMPT = """You are a math solver that writes Python code. Given a math word problem, write a short Python script that calculates the answer and prints ONLY the final answer.
+    PAL_SYSTEM_PROMPT = f"""You are an expert math solver that writes perfect Python code. Given a math word problem, write a short Python script that calculates the exact answer and prints ONLY the final numerical answer.
 
-Rules:
-- Use only basic Python (no imports needed for simple math).
+CRITICAL RULES:
+- Read the logic carefully. Do not calculate the wrong thing (e.g. if asked for profit percentage, don't just calculate the discount).
 - Use print() to output ONLY the final numerical answer.
-- Do NOT print explanations, labels, or units — just the number or short answer.
-- For example, print(225) not print("225 miles").
+- Output ONLY the Python code, nothing else.
 
-Output ONLY the Python code, nothing else. No markdown, no backticks, no explanation."""
+EXAMPLES:
+
+Problem: A merchant marks up goods by 50%. If he then offers a 10% discount on the marked price, what is his actual profit percentage?
+Code:
+cost = 100
+marked = cost * 1.50
+final_price = marked * (1 - 0.10)
+profit = final_price - cost
+profit_percentage = (profit / cost) * 100
+print(profit_percentage)
+
+Problem: If a population quadruples every 12 hours, how many times larger will it be after 3 days?
+Code:
+hours = 3 * 24
+periods = hours / 12
+result = 4 ** periods
+print(result)
+
+Problem: Train X leaves at 60 mph. Three hours later, Train Y leaves on a parallel track at 90 mph. How far from the station does Y catch X?
+Code:
+speed_X = 60
+speed_Y = 90
+delay = 3
+# X_distance = Y_distance -> 60(t + 3) = 90t -> 60t + 180 = 90t -> 30t = 180 -> t = 6
+t = (speed_X * delay) / (speed_Y - speed_X)
+distance = speed_Y * t
+print(distance)
+
+Problem: {prompt}
+Code:"""
 
     messages = [
-        {"role": "system", "content": PAL_SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
+        {"role": "system", "content": PAL_SYSTEM_PROMPT}
     ]
 
     # Attempt 1: Ask Gemma to write the code
