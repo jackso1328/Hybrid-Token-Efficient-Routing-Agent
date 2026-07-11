@@ -29,14 +29,14 @@
   },
   {
     "task_id": "t-05",
-    "answer": "28.0",
-    "source": "local_pal",
+    "answer": "12%",
+    "source": "api_escalation",
     "category": "math",
     "entropy": 0.0
   },
   {
     "task_id": "t-06",
-    "answer": "1024",
+    "answer": "531441.0",
     "source": "local_pal",
     "category": "math",
     "entropy": 0.0
@@ -66,7 +66,7 @@
     "task_id": "t-10",
     "answer": "The James Webb Space Telescope observes the universe in the infrared spectrum to penetrate dust and study the formation of early galaxies.",
     "source": "local",
-    "category": "summarize",
+    "category": "factual",
     "entropy": 0.0
   },
   {
@@ -113,7 +113,7 @@
   },
   {
     "task_id": "t-17",
-    "answer": "def get_even_numbers(lst):\n    result = []\n    for i in lst:\n        if i % 2 == 0:\n            result.append(i)\n    return result",
+    "answer": "def get_even_numbers(lst):\n    new_lst = []\n    for i in lst:\n        if i % 2 == 0:\n            new_lst.append(i)\n    return new_lst",
     "source": "local",
     "category": "code_debug",
     "entropy": 0.0
@@ -127,17 +127,17 @@
   },
   {
     "task_id": "t-19",
-    "answer": "Bob",
+    "answer": "Bob.",
     "source": "local",
     "category": "logic",
     "entropy": 0.0
   },
   {
     "task_id": "t-20",
-    "answer": "Yes.\n\n**Step-by-step reasoning:**\n1. **Premise 1:** All bloops are razzies. (If $x$ is a bloop, then $x$ is a razzie.)\n2. **Premise 2:** All razzies are lazzies. (If $x$ is a razzie, then $x$ is a lazy.)\n3. **Inference:** Since every bloop belongs to the set of razzies, and every member of the set of razzies belongs to the set of lazzies, it follows that every bloop must belong to the set of lazzies.",
-    "source": "local",
+    "answer": "Yes",
+    "source": "api_escalation",
     "category": "logic",
-    "entropy": 0.0
+    "entropy": 99.0
   },
   {
     "task_id": "t-21",
@@ -148,7 +148,7 @@
   },
   {
     "task_id": "t-22",
-    "answer": "def binary_search(arr, target):\n    \"\"\"\n    Searches for a target value in a sorted list using binary search.\n\n    Args:\n        arr (list): The sorted list to search within.\n        target: The value to search for.\n\n    Returns:\n        int: The index of the target if found, otherwise -1.\n    \"\"\"\n    low = 0\n    high = len(arr) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1",
+    "answer": "def binary_search(sorted_list, target):\n    \"\"\"\n    Searches for a target in a sorted list using binary search.\n\n    Args:\n        sorted_list: A sorted list of elements.\n        target: The value to search for.\n\n    Returns:\n        The index of the target if found, otherwise -1.\n    \"\"\"\n    low = 0\n    high = len(sorted_list) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        if sorted_list[mid] == target:\n            return mid\n        elif sorted_list[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1",
     "source": "local",
     "category": "code_gen",
     "entropy": 0.0

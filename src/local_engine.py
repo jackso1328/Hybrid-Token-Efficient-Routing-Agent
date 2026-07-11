@@ -31,7 +31,7 @@ class LocalGemmaEngine:
       - Raw text completion for verifiers
     """
 
-    def __init__(self, model_path: str = None, n_ctx: int = 512, n_threads: int = 4):
+    def __init__(self, model_path: str = None, n_ctx: int = 2048, n_threads: int = 4):
         self.model_path = model_path or LOCAL_MODEL_PATH
         self.n_ctx = n_ctx
         self.n_threads = n_threads
