@@ -61,8 +61,8 @@ class APIClient:
         system_prompt = """You are a token-efficiency system. Use 'Chain of Draft' reasoning: think in highly compressed, abbreviated format using minimal words. Then output EXACTLY the final answer. No conversational preamble."""
 
         try:
-            # For Fireworks, we strictly disable the thinking budget
-            extra_body = {"budget_tokens": 0} if not self.is_openrouter else None
+            # For standard models, extra_body is not needed and will cause a 400 error
+            extra_body = None
             
             # OpenRouter extra headers (only in testing mode)
             extra_headers = {
