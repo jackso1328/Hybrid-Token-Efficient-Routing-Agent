@@ -76,10 +76,12 @@ class GemmaCascadeRouter:
     def _run_local_with_timeout(self, messages, grammar, max_tokens):
         """
         Run local model generation with a timeout using signal.alarm to prevent C++ segfaults.
-        If the model takes longer than LOCAL_TIMEOUT seconds, returns None.
+        Note: SIGALRM is only available on POSIX systems (Linux/Mac).
         """
-        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(LOCAL_TIMEOUT)
+        old_handler = None
+        if os.name == 'posix':
+            old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(LOCAL_TIMEOUT)
         
         try:
             result = self.local_engine.chat_completion(
@@ -94,8 +96,10 @@ class GemmaCascadeRouter:
             print(f"  [ERROR] Local generation failed: {e}")
             return None
         finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+            if os.name == 'posix':
+                signal.alarm(0)
+                if old_handler is not None:
+                    signal.signal(signal.SIGALRM, old_handler)
 
     def _escalate_to_api(self, task, task_type, budget):
         """Helper to send a task directly to the API with category-specific prompts."""
