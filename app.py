@@ -14,49 +14,68 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS for a beautiful modern dark look ---
+# --- Custom CSS for a beautiful modern light look ---
 st.markdown("""
 <style>
+    /* Main Background */
     .stApp {
-        background-color: #0e1117;
+        background-color: #f8fafc;
     }
-    .metric-card {
-        background-color: #1e2127;
-        padding: 20px;
-        border-radius: 12px;
-        border-left: 5px solid;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        margin-bottom: 20px;
-        transition: transform 0.2s;
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-    }
-    .metric-value {
-        font-size: 26px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-top: 5px;
-    }
-    .metric-label {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #9ca3af;
-    }
+    
+    /* Typography */
     h1, h2, h3 {
-        color: #f3f4f6;
-        font-family: 'Inter', sans-serif;
+        color: #1e293b;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-weight: 800;
     }
+    
+    /* Input Text Area */
     .stTextArea textarea {
-        background-color: #1f2937 !important;
-        color: #f9fafb !important;
-        border: 1px solid #374151 !important;
-        border-radius: 8px !important;
+        background-color: #ffffff !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        font-size: 16px;
     }
     .stTextArea textarea:focus {
         border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 1px #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        background-color: #ffffff;
+        padding: 24px;
+        border-radius: 16px;
+        border-top: 6px solid;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .metric-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 8px;
+    }
+    .metric-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 600;
+        color: #64748b;
+    }
+    
+    /* Success/Warning Boxes */
+    div[data-testid="stSuccess"], div[data-testid="stWarning"] {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -107,7 +126,7 @@ if st.button("Route & Process", type="primary"):
             
             with col1:
                 st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #3b82f6;">
+                <div class="metric-card" style="border-top-color: #3b82f6;">
                     <div class="metric-label">Task Category</div>
                     <div class="metric-value">{result.get("category", "unknown").upper()}</div>
                 </div>
@@ -116,7 +135,7 @@ if st.button("Route & Process", type="primary"):
             with col2:
                 source_color = "#10b981" if is_local else "#ef4444"
                 st.markdown(f"""
-                <div class="metric-card" style="border-left-color: {source_color};">
+                <div class="metric-card" style="border-top-color: {source_color};">
                     <div class="metric-label">Execution Source</div>
                     <div class="metric-value">{source.upper()}</div>
                 </div>
@@ -126,7 +145,7 @@ if st.button("Route & Process", type="primary"):
                 entropy = result.get("entropy", 0.0)
                 entropy_color = "#f59e0b" if entropy > 1.0 else "#10b981"
                 st.markdown(f"""
-                <div class="metric-card" style="border-left-color: {entropy_color};">
+                <div class="metric-card" style="border-top-color: {entropy_color};">
                     <div class="metric-label">Model Entropy</div>
                     <div class="metric-value">{entropy:.2f}</div>
                 </div>
@@ -134,7 +153,7 @@ if st.button("Route & Process", type="primary"):
                 
             with col4:
                 st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #8b5cf6;">
+                <div class="metric-card" style="border-top-color: #8b5cf6;">
                     <div class="metric-label">Time Taken</div>
                     <div class="metric-value">{duration:.2f}s</div>
                 </div>
