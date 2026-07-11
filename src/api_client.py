@@ -12,6 +12,8 @@ class APIClient:
     In testing mode (only OPENROUTER_API_KEY set): uses OpenRouter.
     """
     def __init__(self):
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
         if FIREWORKS_API_KEY:
             # JUDGING MODE: Fireworks only, OpenRouter completely disabled
             self.client = OpenAI(
@@ -88,7 +90,11 @@ Do not use conversational preamble like 'Here is the answer'. Keep output strict
 
             # Log usage if available
             if hasattr(response, 'usage') and response.usage:
-                print(f"  [API] Response tokens: prompt={response.usage.prompt_tokens}, completion={response.usage.completion_tokens}")
+                p_tokens = response.usage.prompt_tokens
+                c_tokens = response.usage.completion_tokens
+                self.total_prompt_tokens += p_tokens
+                self.total_completion_tokens += c_tokens
+                print(f"  [API] Response tokens: prompt={p_tokens}, completion={c_tokens}")
 
             return content.strip() if content else ""
         except Exception as e:

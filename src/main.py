@@ -302,9 +302,12 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
     api_count = sum(1 for r in results if 'api' in r['source'])
     blank_count = sum(1 for r in results if not r['answer'].strip())
     
+    total_api_tokens = router.api_client.total_prompt_tokens + router.api_client.total_completion_tokens
+    
     print(f"  Total tasks: {len(results)}")
     print(f"  Local solves: {local_count} (zero API tokens)")
     print(f"  API escalations: {api_count}")
+    print(f"  Total API tokens used: {total_api_tokens} ({router.api_client.total_prompt_tokens} prompt / {router.api_client.total_completion_tokens} completion)")
     print(f"  Blank answers: {blank_count}")
     print(f"  Total runtime: {total_elapsed:.2f}s")
     print(f"  Results saved to {output_file}")
