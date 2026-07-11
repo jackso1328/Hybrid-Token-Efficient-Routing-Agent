@@ -313,7 +313,7 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
         gc.collect()
 
         print(f"  Loading ReasonLite from {REASONLITE_MODEL_PATH}...")
-        router.local_engine.reload_model(REASONLITE_MODEL_PATH, n_ctx=1024, n_threads=4)
+        router.local_engine.reload_model(REASONLITE_MODEL_PATH, n_ctx=2048, n_threads=4)
 
         for task in math_tasks:
             start_time = time.time()
@@ -372,22 +372,39 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
 
 
 def _is_math_task(prompt: str) -> bool:
-    """Quick heuristic to detect math tasks before the classifier runs."""
-    math_signals = [
-        "calculate", "profit percentage",
-        "mph", "speed", "distance", "triples", "doubles",
-        "marks up", "discount", "percentage", "times larger", 
-        "interest", "compound", "equation", "solve for", "probability"
-    ]
+    """Precise heuristic to detect math word problems only.
+    Uses multi-signal matching to avoid false positives on factual/sentiment tasks.
+    """
     prompt_lower = prompt.lower()
-    return any(signal in prompt_lower for signal in math_signals)
+    
+    # Must have at least one strong math indicator (numbers + operations)
+    has_numbers = any(char.isdigit() for char in prompt)
+    
+    strong_math_signals = [
+        "mph", "marks up", "profit percentage", "discount",
+        "triples every", "doubles every", "times larger",
+        "how far", "how much", "how many times",
+        "compound interest", "solve for",
+    ]
+    
+    # Must match a strong signal AND contain numbers
+    has_strong_signal = any(signal in prompt_lower for signal in strong_math_signals)
+    
+    # Exclude patterns that look like math but aren't
+    exclusion_signals = [
+        "sentiment", "summarize", "explain", "describe", "extract",
+        "fix the bug", "write a python", "classify", "what is the pauli",
+        "what is the"
+    ]
+    is_excluded = any(excl in prompt_lower for excl in exclusion_signals)
+    
+    return has_strong_signal and has_numbers and not is_excluded
 
 
 def _process_math_task(router, task: dict) -> dict:
     """
     Process a math task using the ReasonLite model.
-    ReasonLite is a reasoning model — we let it think in <think> tags,
-    then extract only the final answer.
+    Uses a concise Chain-of-Draft prompt to get fast, accurate answers.
     """
     prompt = task["prompt"]
     task_id = task["task_id"]
@@ -397,25 +414,32 @@ def _process_math_task(router, task: dict) -> dict:
     print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
 
     messages = [
-        {"role": "system", "content": "You are a precise math solver. Think step-by-step inside <think>...</think> tags, then output ONLY the final numerical answer or short answer after the tags."},
+        {"role": "system", "content": "Solve the math problem. Show brief work, then give the final answer on its own line starting with 'ANSWER: '."},
         {"role": "user", "content": prompt}
     ]
 
-    # Give ReasonLite enough tokens to reason through the math (increased to 2048)
-    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=2048)
+    # ReasonLite is tiny (0.6B) — keep tokens small for speed, 256 is plenty for math
+    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=256)
 
     if local_result is None:
-        # Timeout — fall back to API
         print(f"[{task_id}] [TIMEOUT] ReasonLite exceeded {LOCAL_TIMEOUT}s -> Escalating to API")
         final_answer = router._escalate_to_api(task, "math", 4096)
         source = "api_escalation"
     else:
         raw_answer = local_result["content"]
-        # Strip <think> blocks to get only the final answer
-        final_answer = re.sub(r'<think>.*?(?:</think>|$)\s*', '', raw_answer, flags=re.DOTALL).strip()
+        # Strip <think> blocks if present
+        cleaned = re.sub(r'<think>.*?(?:</think>|$)\s*', '', raw_answer, flags=re.DOTALL).strip()
+        
+        # Try to extract the ANSWER: line
+        answer_match = re.search(r'ANSWER:\s*(.+)', cleaned, re.IGNORECASE)
+        if answer_match:
+            final_answer = answer_match.group(1).strip()
+        else:
+            # Fall back to the last non-empty line (usually the final answer)
+            lines = [l.strip() for l in cleaned.split('\n') if l.strip()]
+            final_answer = lines[-1] if lines else ""
 
         if not final_answer:
-            # Model only produced thinking with no final answer — escalate
             print(f"[{task_id}] [EMPTY] ReasonLite produced no final answer -> Escalating to API")
             final_answer = router._escalate_to_api(task, "math", 4096)
             source = "api_escalation"
