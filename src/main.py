@@ -359,8 +359,7 @@ def _is_math_task(prompt: str) -> bool:
     # Exclude patterns that look like math but aren't
     exclusion_signals = [
         "sentiment", "summarize", "explain", "describe", "extract",
-        "fix the bug", "write a python", "classify", "what is the pauli",
-        "what is the"
+        "fix the bug", "write a python", "classify", "pauli exclusion"
     ]
     is_excluded = any(excl in prompt_lower for excl in exclusion_signals)
     
