@@ -204,7 +204,7 @@ class GemmaCascadeRouter:
                     valid_sentiments = ["positive", "negative", "neutral", "mixed"]
                     if not any(s in raw_local_answer.lower() for s in valid_sentiments):
                         verified = False
-                elif task_type in ["logic", "factual"]:
+                elif task_type in ["logic", "factual"] and "[MOCK]" not in raw_local_answer:
                     if entropy > 0.8:
                         print(f"[{task_id}] [WARN] High entropy ({entropy:.2f}). Triggering self-debate...")
                         second_opinion = self.local_engine.chat_completion(messages, max_tokens=local_max_tokens, temperature=0.5)["content"]
