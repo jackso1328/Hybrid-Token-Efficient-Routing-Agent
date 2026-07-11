@@ -99,7 +99,7 @@ class GemmaCascadeRouter:
         """Helper to send a task directly to the API with category-specific prompts."""
         compressed_prompt = task.get("compressed_prompt", task["prompt"])
         api_difficulty = "hard" if task_type in ["math", "code_gen"] else "medium"
-        api_budget = max(budget, 1024)
+        api_budget = max(budget, 4096)  # Give premium models enough room to think without getting cut off
         
         if task_type in ["code_debug", "code_gen"]:
             api_prompt = f"{compressed_prompt}\nProvide ONLY the final code. No explanation."
