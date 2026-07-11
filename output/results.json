@@ -15,29 +15,29 @@
   },
   {
     "task_id": "t-03",
-    "answer": "The Pauli Exclusion Principle states that no two identical fermions (particles with half-integer spin, such as electrons) can occupy the same quantum state simultaneously within a quantum system.\n\nThis principle prevents white dwarf stars from collapsing under their own gravity through **electron degeneracy pressure**.\n\n1. **Degeneracy:** As white dwarfs are extremely dense, the electrons are packed very closely together. Due to the Pauli Exclusion Principle, the electrons are forced into higher and higher energy states, even at relatively low temperatures.\n2. **Degeneracy Pressure:** This resistance to further compression, arising from the quantum mechanical nature of the electrons, is known as electron degeneracy pressure. This pressure acts outward, counteracting the inward force of gravity.\n3. **Stability:** This degeneracy pressure provides the necessary outward force to support the star against gravitational collapse, establishing a state of hydrostatic equilibrium for white dwarfs.",
-    "source": "local",
-    "category": "factual",
+    "answer": "Pauli Exclusion: fermions can't occupy same quantum state. In white dwarfs, electron degeneracy pressure from this prohibition resists gravitational collapse.",
+    "source": "api_escalation",
+    "category": "math",
     "entropy": 0.0
   },
   {
     "task_id": "t-04",
     "answer": "225 miles",
-    "source": "api_direct",
+    "source": "api_escalation",
     "category": "math",
     "entropy": 0.0
   },
   {
     "task_id": "t-05",
     "answer": "12%",
-    "source": "api_direct",
+    "source": "api_escalation",
     "category": "math",
     "entropy": 0.0
   },
   {
     "task_id": "t-06",
-    "answer": "531441",
-    "source": "api_direct",
+    "answer": "The bacteria population triples every 8",
+    "source": "local_reasonlite",
     "category": "math",
     "entropy": 0.0
   },
@@ -50,9 +50,9 @@
   },
   {
     "task_id": "t-08",
-    "answer": "positive",
-    "source": "local",
-    "category": "sentiment",
+    "answer": "Positive",
+    "source": "api_escalation",
+    "category": "math",
     "entropy": 0.0
   },
   {
@@ -64,9 +64,9 @@
   },
   {
     "task_id": "t-10",
-    "answer": "The James Webb Space Telescope observes the universe in the infrared spectrum to penetrate dust and study the formation of early galaxies.",
+    "answer": "The James Webb Space Telescope observes the universe in the infrared spectrum to penetrate dust clouds and study the formation of the earliest galaxies.",
     "source": "local",
-    "category": "factual",
+    "category": "summarize",
     "entropy": 0.0
   },
   {
@@ -78,9 +78,9 @@
   },
   {
     "task_id": "t-12",
-    "answer": "associated with reduced cardiovascular disease risk and increased longevity.",
-    "source": "local",
-    "category": "summarize",
+    "answer": "associated with reduced cardiovascular risk and greater longevity.",
+    "source": "api_escalation",
+    "category": "math",
     "entropy": 0.0
   },
   {
@@ -113,7 +113,7 @@
   },
   {
     "task_id": "t-17",
-    "answer": "def get_even_numbers(lst):\n    new_lst = []\n    for i in lst:\n        if i % 2 == 0:\n            new_lst.append(i)\n    return new_lst",
+    "answer": "def get_even_numbers(lst):\n    result = []\n    for i in lst:\n        if i % 2 == 0:\n            result.append(i)\n    return result",
     "source": "local",
     "category": "code_debug",
     "entropy": 0.0
@@ -127,14 +127,14 @@
   },
   {
     "task_id": "t-19",
-    "answer": "Bob.",
+    "answer": "Bob",
     "source": "local",
     "category": "logic",
     "entropy": 0.0
   },
   {
     "task_id": "t-20",
-    "answer": "Yes",
+    "answer": "Yes.",
     "source": "api_escalation",
     "category": "logic",
     "entropy": 99.0
@@ -148,7 +148,7 @@
   },
   {
     "task_id": "t-22",
-    "answer": "def binary_search(sorted_list, target):\n    \"\"\"\n    Searches for a target in a sorted list using binary search.\n\n    Args:\n        sorted_list: A sorted list of elements.\n        target: The value to search for.\n\n    Returns:\n        The index of the target if found, otherwise -1.\n    \"\"\"\n    low = 0\n    high = len(sorted_list) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        if sorted_list[mid] == target:\n            return mid\n        elif sorted_list[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1",
+    "answer": "def binary_search(sorted_list, target):\n    \"\"\"\n    Searches for the target in a sorted list using binary search.\n\n    Args:\n        sorted_list: A sorted list of elements.\n        target: The value to search for.\n\n    Returns:\n        The index of the target if found, otherwise -1.\n    \"\"\"\n    low = 0\n    high = len(sorted_list) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        if sorted_list[mid] == target:\n            return mid\n        elif sorted_list[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1",
     "source": "local",
     "category": "code_gen",
     "entropy": 0.0

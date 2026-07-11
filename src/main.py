@@ -374,9 +374,9 @@ def run_pipeline(input_file=INPUT_PATH, output_file=OUTPUT_PATH):
 def _is_math_task(prompt: str) -> bool:
     """Quick heuristic to detect math tasks before the classifier runs."""
     math_signals = [
-        "how far", "how many", "calculate", "what is the", "profit percentage",
-        "mph", "speed", "distance", "population", "triples", "doubles",
-        "marks up", "discount", "percentage", "times larger", "bacteria",
+        "calculate", "profit percentage",
+        "mph", "speed", "distance", "triples", "doubles",
+        "marks up", "discount", "percentage", "times larger", 
         "interest", "compound", "equation", "solve for", "probability"
     ]
     prompt_lower = prompt.lower()
@@ -401,8 +401,8 @@ def _process_math_task(router, task: dict) -> dict:
         {"role": "user", "content": prompt}
     ]
 
-    # Give ReasonLite enough tokens to reason through the math
-    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=512)
+    # Give ReasonLite enough tokens to reason through the math (increased to 2048)
+    local_result = router._run_local_with_timeout(messages, grammar=None, max_tokens=2048)
 
     if local_result is None:
         # Timeout — fall back to API
