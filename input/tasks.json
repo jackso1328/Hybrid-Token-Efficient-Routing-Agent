@@ -1,90 +1,90 @@
 [
   {
     "task_id": "t-01",
-    "prompt": "Explain how RNA interference (RNAi) regulates gene expression, including the roles of Dicer, siRNA, and RISC."
+    "prompt": "Explain the exact mechanism of CRISPR-Cas9, detailing the roles of crRNA, tracrRNA, and the PAM sequence."
   },
   {
     "task_id": "t-02",
-    "prompt": "Compare Raft consensus with Paxos, highlighting their approaches to leader election and fault tolerance."
+    "prompt": "Describe the difference between Byzantine Fault Tolerance and standard Crash Fault Tolerance in distributed systems."
   },
   {
     "task_id": "t-03",
-    "prompt": "Explain neutron degeneracy pressure and how it supports neutron stars against gravitational collapse."
+    "prompt": "What is the Pauli Exclusion Principle and how does it prevent white dwarf stars from collapsing under their own gravity?"
   },
   {
     "task_id": "t-04",
-    "prompt": "A cyclist travels at 18 mph. Ninety minutes later, another cyclist leaves the same point at 27 mph. How far from the start does the second cyclist catch the first?"
+    "prompt": "Train A leaves a station at 45 mph. Two hours later, Train B leaves on a parallel track at 75 mph. How far from the station does B catch A?"
   },
   {
     "task_id": "t-05",
-    "prompt": "A retailer marks up a product by 25%. If a 10% discount is applied to the marked price, what is the actual profit percentage?"
+    "prompt": "A merchant marks up goods by 40%. If he then offers a 20% discount on the marked price, what is his actual profit percentage?"
   },
   {
     "task_id": "t-06",
-    "prompt": "A culture of yeast doubles every 6 hours. By what factor does the population increase after exactly 3 days?"
+    "prompt": "If a bacteria population triples every 8 hours, how many times larger will the population be after exactly 4 days?"
   },
   {
     "task_id": "t-07",
-    "prompt": "Classify sentiment: The customer support was friendly and responsive, but the constant software crashes made the product impossible to rely on."
+    "prompt": "Classify sentiment: The visuals were absolutely breathtaking, but the convoluted plot and wooden acting made me regret buying a ticket."
   },
   {
     "task_id": "t-08",
-    "prompt": "Classify sentiment: Although the initial setup took longer than expected, the application's stability and automation features have saved us countless hours."
+    "prompt": "Classify sentiment: While some might find the interface slightly outdated, the software's unparalleled reliability and speed make it essential for our team."
   },
   {
     "task_id": "t-09",
-    "prompt": "Classify sentiment: The hotel room was clean, the service was acceptable, and the amenities matched what was advertised, nothing more or less."
+    "prompt": "Classify sentiment: The restaurant was perfectly adequate, with standard portions and typical prices, leaving exactly zero lasting impression."
   },
   {
     "task_id": "t-10",
-    "prompt": "Summarize in exactly one sentence: Quantum computers exploit superposition and entanglement to perform certain computations more efficiently than classical computers, though practical large-scale systems remain challenging to build."
+    "prompt": "Summarize in exactly one sentence: The James Webb Space Telescope operates primarily in the infrared spectrum, allowing it to see through dense dust clouds that obscure visible light. This capability enables astronomers to observe the formation of some of the earliest galaxies in the universe."
   },
   {
     "task_id": "t-11",
-    "prompt": "Summarize in exactly one sentence: Renewable energy sources such as solar and wind reduce greenhouse gas emissions, but integrating them into electrical grids requires advances in storage and transmission technologies."
+    "prompt": "Summarize in exactly one sentence: Machine learning algorithms require vast amounts of curated data to function accurately. Without diverse and unbiased datasets, these models can inadvertently learn and amplify human prejudices, leading to discriminatory outcomes in automated decision-making systems."
   },
   {
     "task_id": "t-12",
-    "prompt": "Summarize in exactly one sentence: Vaccination trains the immune system to recognize pathogens before infection, reducing disease severity and helping limit community transmission."
+    "prompt": "Summarize in exactly one sentence: The Mediterranean diet emphasizes plant-based foods, healthy fats like olive oil, and moderate consumption of fish and poultry. Numerous longitudinal studies have linked this eating pattern to reduced risks of cardiovascular disease and increased overall longevity."
   },
   {
     "task_id": "t-13",
-    "prompt": "Extract entities and their types: President Emmanuel Macron met Chancellor Olaf Scholz in Paris on March 15, 2024, to discuss European security."
+    "prompt": "Extract entities and their types: Prime Minister Winston Churchill delivered his speech in London on June 4, 1940, addressing the House of Commons."
   },
   {
     "task_id": "t-14",
-    "prompt": "Extract entities and their types: Sundar Pichai announced that Google would expand its cloud infrastructure in Singapore next year."
+    "prompt": "Extract entities and their types: Satya Nadella, CEO of Microsoft, announced a new AI research center in Bangalore that will open in early 2025."
   },
   {
     "task_id": "t-15",
-    "prompt": "Extract entities and their types: UNICEF sent Dr. Maria Alvarez to Nairobi on Monday to oversee the emergency relief program."
+    "prompt": "Extract entities and their types: The World Health Organization dispatched Dr. Chen to Geneva last Friday to coordinate the international response."
   },
   {
     "task_id": "t-16",
-    "prompt": "Fix the bug in this Python code:\ndef square_elements(nums):\n    return map(lambda x: x*x, nums)"
+    "prompt": "Fix the bug in this Python code: \ndef reverse_string(s):\n    return s.reverse()"
   },
   {
     "task_id": "t-17",
-    "prompt": "Fix the bug in this Python code:\ndef remove_negatives(lst):\n    for x in lst:\n        if x < 0:\n            lst.remove(x)\n    return lst"
+    "prompt": "Fix the bug in this Python code: \ndef get_even_numbers(lst):\n    for i in lst:\n        if i % 2 != 0:\n            lst.remove(i)\n    return lst"
   },
   {
     "task_id": "t-18",
-    "prompt": "Fix the bug in this Python code:\ndef add_item(item, items=[]):\n    items.append(item)\n    return items"
+    "prompt": "Fix the bug in this Python code: \ndef append_to_list(val, my_list=[]):\n    my_list.append(val)\n    return my_list"
   },
   {
     "task_id": "t-19",
-    "prompt": "Eva is older than Liam but younger than Noah. Olivia is older than Noah. Who is the youngest person?"
+    "prompt": "Alice is taller than Bob but shorter than Charlie. Dave is taller than Charlie. Who is the shortest person?"
   },
   {
     "task_id": "t-20",
-    "prompt": "If all flarps are snibs and all snibs are trels, are all flarps definitely trels?"
+    "prompt": "If all bloops are razzies and all razzies are lazzies, are all bloops definitely lazzies?"
   },
   {
     "task_id": "t-21",
-    "prompt": "Write a Python function 'count_vowels' that returns the number of vowels in a string, ignoring case."
+    "prompt": "Write a Python function 'is_palindrome' that checks if a string is a palindrome, ignoring spaces, punctuation, and case."
   },
   {
     "task_id": "t-22",
-    "prompt": "Write a Python function 'merge_sorted_lists' that merges two sorted lists into one sorted list in O(n) time."
+    "prompt": "Write a Python function 'binary_search' that returns the index of a target in a sorted list, or -1 if not found, in O(log N) time."
   }
 ]

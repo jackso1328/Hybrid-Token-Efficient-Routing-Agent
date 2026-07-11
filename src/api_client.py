@@ -40,7 +40,7 @@ class APIClient:
         Selects the optimal model from ALLOWED_MODELS based on difficulty.
         """
         if not ALLOWED_MODELS or ALLOWED_MODELS == ["tencent/hy3:free"]:
-            return "tencent/hy3:free" if self.is_openrouter else "accounts/fireworks/models/llama-v3p1-70b-instruct"
+            return "tencent/hy3:free" if self.is_openrouter else "accounts/fireworks/models/gemma-4-21b-a4b-it"
             
         if task_difficulty == "hard":
             return ALLOWED_MODELS[-1]
