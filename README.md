@@ -1,15 +1,57 @@
 # Hybrid Token-Efficient Routing Agent
 
-Welcome to the **Hybrid Token-Efficient Routing Agent**, designed for the AMD Developer Hackathon. This project uses a sophisticated, memory-constrained 2-phase pipeline to route complex AI tasks between a lightning-fast local LLM and powerful API models, ensuring zero Out-of-Memory (OOM) crashes while maximizing token efficiency.
+Welcome to the **Hybrid Token-Efficient Routing Agent**. This project was engineered specifically to solve two of the biggest challenges in modern AI deployment: **Strict Hardware Constraints (4GB RAM)** and **API Cost Optimization**.
 
-## 🌟 The 2-Phase Memory Architecture
+By utilizing a sophisticated, memory-aware 2-phase pipeline, this agent seamlessly routes complex AI tasks between a lightning-fast local LLM and powerful external API models. It ensures zero Out-of-Memory (OOM) crashes while maximizing token efficiency and minimizing costs.
 
-The strict 4GB RAM limit imposed by the hackathon judging container is the biggest hurdle in running local LLMs. If the system attempts to load both the prompt compressor and the local model simultaneously, the 4GB limit is immediately exceeded, resulting in a crash.
+---
 
-To solve this, our agent employs a **2-Phase Sequential Architecture** with aggressive Python garbage collection:
+## 🎯 Core Concepts & Architecture
 
-1. **Phase 1 (Prompt Compression):** The pipeline first loads the 1.5 GB `LLMLingua-2` model into memory. It reads `input/tasks.json`, scores token importance, and aggressively compresses long prompts (saving up to 50% of context). Once finished, the pipeline actively destroys the global PyTorch tensors and runs the Garbage Collector, forcefully returning the 1.5 GB of RAM to the OS.
-2. **Phase 2 (Local Engine & Routing):** With a completely flushed RAM environment, the local LLM safely loads into memory. It dynamically classifies intent. If a task requires heavy reasoning (Math/Logic) or generates high output entropy, it seamlessly escalates the request to the Fireworks AI API.
+Our architecture is built on two primary pillars: **Aggressive Memory Management** and **Dynamic Intent Routing**.
+
+### 1. The 4GB Memory Bottleneck
+The strict 4GB RAM limit imposed by standard edge devices (and hackathon judging containers) makes it seemingly impossible to run a high-quality local LLM alongside a prompt-compression model simultaneously. Loading both would instantly exceed the memory limit and crash the system.
+
+### 2. Our Solution: 2-Phase Sequential Memory Management
+To solve this, our agent employs a **2-Phase Sequential Architecture** heavily reliant on aggressive Python garbage collection and tensor destruction.
+
+```mermaid
+sequenceDiagram
+    participant OS as System (4GB Limit)
+    participant P1 as Phase 1 (Compressor)
+    participant P2 as Phase 2 (Local LLM)
+    
+    OS->>P1: Allocate 1.5GB RAM
+    Note over P1: Compress all prompts by 50%
+    P1->>OS: Destroy Tensors & GC (Release 1.5GB)
+    OS->>P2: Allocate 3.4GB RAM
+    Note over P2: Process & Route Tasks
+    P2->>OS: Execution Complete
+```
+
+1. **Phase 1 (Prompt Compression):** The pipeline first loads the 1.5 GB `LLMLingua-2` model into memory. It reads the tasks, scores token importance, and aggressively compresses long prompts. Once finished, the pipeline actively destroys the global PyTorch tensors and runs the Garbage Collector, forcefully returning the 1.5 GB of RAM back to the OS.
+2. **Phase 2 (Local Engine & Routing):** With a completely flushed RAM environment, the local LLM safely loads into memory.
+
+### 3. Dynamic Intent-Based Routing
+Once the local LLM is loaded, it doesn't just blindly answer questions. It acts as an intelligent **Router**. 
+
+```mermaid
+graph TD
+    A[Compressed Task] --> B[Local LLM Router]
+    B -->|Analyzes Task Intent| C{Difficulty / Category}
+    
+    C -->|General / Summarize<br>Low Entropy| D[Execute Locally]
+    D --> E[Cost: 0 API Tokens<br>High Speed]
+    
+    C -->|Math / Logic<br>High Entropy| F[Escalate to API]
+    F --> G[Cost: Token-Efficient<br>High Accuracy]
+    
+    E --> H[Final Output]
+    G --> H
+```
+
+If a task is standard (like summarization or data extraction), it answers it locally for **0 API cost**. If a task requires heavy reasoning (like advanced mathematics) or generates high output entropy, it seamlessly escalates the request to the Fireworks AI API. This ensures you only pay for API tokens when absolutely necessary!
 
 ---
 
