@@ -3,13 +3,6 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import torch
-
-# ZeroGPU expects CUDA PyTorch. Since we use CPU PyTorch, we must fake the CUDA version 
-# before importing 'spaces', otherwise it crashes.
-if torch.version.cuda is None:
-    torch.version.cuda = "12.1"
-
 import spaces
 
 @spaces.GPU
