@@ -93,12 +93,15 @@ python src/main.py
 
 ### Option 2: Run via Docker (Live API Backend)
 
-The project is fully configured to run as a **Live Backend API** inside a strict 2 vCPU / 4GB RAM Docker container.
+The project is fully configured to run as a **Live Backend API** inside a strict 2 vCPU / 4GB RAM Docker container. You don't even need to build it yourself—you can pull the pre-built image directly from Docker Hub!
 
-#### 1. Build the Docker Image
+#### 1. Pull the Docker Image
+Download the pre-built container from Docker Hub:
 ```bash
-docker build -t hybrid-routing-agent .
+docker pull proudsnow10/hybrid-routing-agent:latest
 ```
+
+*(Alternatively, to build it manually from source, run: `docker build -t proudsnow10/hybrid-routing-agent:latest .`)*
 
 #### 2. Run the Container
 Launch the container in detached mode, exposing the live backend on port `8000`, while strictly enforcing the hackathon's resource limits. 
@@ -107,10 +110,10 @@ Launch the container in detached mode, exposing the live backend on port `8000`,
 
 ```bash
 # If using your .env file:
-docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" --env-file .env hybrid-routing-agent
+docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" --env-file .env proudsnow10/hybrid-routing-agent:latest
 
 # OR, pass your Fireworks API key directly:
-docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" -e FIREWORKS_API_KEY="your_api_key_here" -e ALLOWED_MODELS="accounts/fireworks/models/gemma-4-26b-a4b-it" hybrid-routing-agent
+docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" -e FIREWORKS_API_KEY="your_api_key_here" -e ALLOWED_MODELS="accounts/fireworks/models/gemma-4-26b-a4b-it" proudsnow10/hybrid-routing-agent:latest
 ```
 
 #### 3. Test the Live Backend
