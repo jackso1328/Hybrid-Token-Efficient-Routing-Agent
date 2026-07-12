@@ -75,15 +75,7 @@ cd Hybrid-Token-Efficient-Routing-Agent
 pip install -r requirements.txt
 ```
 
-#### 3. Configuration
-Create a `.env` file in the root directory and add the required hackathon variables:
-```env
-FIREWORKS_API_KEY=your_api_key_here
-FIREWORKS_BASE_URL=https://api.fireworks.ai/inference/v1
-ALLOWED_MODELS=accounts/fireworks/models/gemma-4-26b-a4b-it
-```
-
-#### 4. Execution
+#### 3. Execution
 Run the batch processing script. It will read `input/tasks.json` and beautifully format the final answers into `output/results.json`:
 ```bash
 python src/main.py
@@ -91,9 +83,9 @@ python src/main.py
 
 ---
 
-### Option 2: Run via Docker (Live API Backend)
+### Option 2: Run via Docker 
 
-The project is fully configured to run as a **Live Backend API** inside a strict 2 vCPU / 4GB RAM Docker container. You don't even need to build it yourself—you can pull the pre-built image directly from Docker Hub!
+The project is fully configured to run inside a strict 2 vCPU / 4GB RAM Docker container. You don't even need to build it yourself—you can pull the pre-built image directly from Docker Hub!
 
 #### 1. Pull the Docker Image
 Download the pre-built container from Docker Hub:
@@ -104,22 +96,17 @@ docker pull proudsnow10/hybrid-routing-agent:latest
 *(Alternatively, to build it manually from source, run: `docker build -t proudsnow10/hybrid-routing-agent:latest .`)*
 
 #### 2. Run the Container
-Launch the container in detached mode, exposing the live backend on port `8000`, while strictly enforcing the hackathon's resource limits. 
+Launch the container, ensuring you mount your local `input` and `output` folders so the agent can read `tasks.json` and save the final `results.json`.
 
-**Important:** You must add your Fireworks API key. You can either use your `.env` file, or pass the key directly in the command:
+**Important:** You must pass your Fireworks API key directly in the command:
 
 ```bash
 # Pass your Fireworks API key directly:
-docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" -e FIREWORKS_API_KEY="your_api_key_here" -e ALLOWED_MODELS="accounts/fireworks/models/gemma-4-26b-a4b-it" proudsnow10/hybrid-routing-agent:latest
+docker run --rm --cpus="2.0" --memory="4g" -e FIREWORKS_API_KEY="your_api_key_here" -e ALLOWED_MODELS="accounts/fireworks/models/gemma-4-26b-a4b-it" -v "${PWD}/input:/app/input" -v "${PWD}/output:/app/output" proudsnow10/hybrid-routing-agent:latest
 ```
 
-#### 3. Test the Live Backend
-Once the container is running, the API is live at `http://localhost:8000`. You can test it by sending a POST request to `/solve`:
-```bash
-curl -X POST "http://localhost:8000/solve" \
-     -H "Content-Type: application/json" \
-     -d '{"task_id": "demo-01", "prompt": "If a train travels 60mph for 2 hours, how far does it go?"}'
-```
+#### 3. Expected Output
+The container will process the tasks within the strict 4GB RAM constraint, making dynamic routing decisions. Once it finishes, the container will gracefully exit and your final answers will be saved to `output/results.json` on your local machine!
 
 ---
 *Built for the AMD Developer Hackathon.*
