@@ -1,3 +1,12 @@
+---
+title: GemmaCascade Router
+emoji: 🧠
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+app_file: app.py
+pinned: false
+---
 # Hybrid Token-Efficient Routing Agent
 
 Welcome to the **Hybrid Token-Efficient Routing Agent**, designed for the AMD Developer Hackathon. This project uses a sophisticated, memory-constrained 2-phase pipeline to route complex AI tasks between a lightning-fast local Gemma 2B model and powerful API models, ensuring zero Out-of-Memory (OOM) crashes while maximizing token efficiency.
