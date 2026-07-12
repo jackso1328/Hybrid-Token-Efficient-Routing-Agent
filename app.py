@@ -3,6 +3,11 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import spaces
+
+@spaces.GPU
+def dummy_gpu_function():
+    pass
 
 # Ensure src is in the path so we can import the router
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
