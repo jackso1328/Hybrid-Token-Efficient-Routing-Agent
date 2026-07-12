@@ -1,12 +1,3 @@
----
-title: GemmaCascade Router
-emoji: 🧠
-colorFrom: blue
-colorTo: indigo
-sdk: gradio
-app_file: app.py
-pinned: false
----
 # Hybrid Token-Efficient Routing Agent
 
 Welcome to the **Hybrid Token-Efficient Routing Agent**, designed for the AMD Developer Hackathon. This project uses a sophisticated, memory-constrained 2-phase pipeline to route complex AI tasks between a lightning-fast local Gemma 2B model and powerful API models, ensuring zero Out-of-Memory (OOM) crashes while maximizing token efficiency.
@@ -17,71 +8,70 @@ The strict 4GB RAM limit imposed by the hackathon judging container is the bigge
 
 To solve this, our agent employs a **2-Phase Sequential Architecture** with aggressive Python garbage collection:
 
-*   **Phase 1 (Prompt Compression):** The pipeline first loads the 1.5 GB `LLMLingua-2` model into memory. It reads `tasks.json`, scores token importance, and aggressively compresses long prompts (saving up to 50% of context). Once finished, the pipeline actively destroys the global PyTorch tensors and runs the Garbage Collector, forcefully returning the 1.5 GB of RAM to the Linux OS.
-*   **Phase 2 (Local Engine & Routing):** With a completely flushed and clean RAM environment, the 3.4 GB `Gemma 2B` model safely loads into memory. It processes tasks using the pre-compressed prompts, dynamically classifying intent. If a task requires heavy reasoning (Math/Logic) or generates high output entropy, it seamlessly escalates the request to the external API using OpenRouter, keeping API costs strictly under budget.
+1. **Phase 1 (Prompt Compression):** The pipeline first loads the 1.5 GB `LLMLingua-2` model into memory. It reads `input/tasks.json`, scores token importance, and aggressively compresses long prompts (saving up to 50% of context). Once finished, the pipeline actively destroys the global PyTorch tensors and runs the Garbage Collector, forcefully returning the 1.5 GB of RAM to the OS.
+2. **Phase 2 (Local Engine & Routing):** With a completely flushed RAM environment, the 3.4 GB `Gemma 2B` model safely loads into memory. It dynamically classifies intent. If a task requires heavy reasoning (Math/Logic) or generates high output entropy, it seamlessly escalates the request to the Fireworks AI API.
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
-*   **WSL (Ubuntu) or Native Linux**
-*   **Docker** (for the final judging container)
-*   **OpenRouter API Key**
+## 🚀 How to Run the Agent
 
-### Installation (Local Development)
-1. Clone the repository and enter the project directory.
-2. Create and activate your virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-3. Install the optimized dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file in the root directory and add your API key:
-   ```env
-   OPENROUTER_API_KEY=your_api_key_here
-   ```
+You can run this project locally via source code or use the fully containerized Docker image.
 
-### Running the Agent
-Simply run the main pipeline script:
+### Option 1: Run Locally (Source Code)
+
+#### 1. Prerequisites
+- **Python 3.10+** (WSL/Ubuntu recommended)
+- **Fireworks API Key**
+
+#### 2. Installation
+Clone the repository and install the optimized dependencies:
+```bash
+git clone https://github.com/jackso1328/Hybrid-Token-Efficient-Routing-Agent.git
+cd Hybrid-Token-Efficient-Routing-Agent
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### 3. Configuration
+Create a `.env` file in the root directory and add the required hackathon variables:
+```env
+FIREWORKS_API_KEY=your_api_key_here
+FIREWORKS_BASE_URL=https://api.fireworks.ai/inference/v1
+ALLOWED_MODELS=accounts/fireworks/models/gemma-4-26b-a4b-it
+```
+
+#### 4. Execution
+Run the batch processing script. It will read `input/tasks.json` and beautifully format the final answers into `output/results.json`:
 ```bash
 python src/main.py
 ```
-The script will read `input/tasks.json` and generate `output/results.json` while printing the time, cost, and routing decisions to the console.
 
-## 🐳 Docker Deployment
+---
 
-The agent is fully configured to run inside a Docker container strictly capped at 2 vCPUs and 4GB RAM. 
+### Option 2: Run via Docker (Live API Backend)
 
-### Build the Image
+The project is fully configured to run as a **Live Backend API** inside a strict 2 vCPU / 4GB RAM Docker container.
+
+#### 1. Build the Docker Image
 ```bash
 docker build -t hybrid-routing-agent .
 ```
 
-### Run the Container
+#### 2. Run the Container
+Launch the container in detached mode, exposing the live backend on port `8000`, while strictly enforcing the hackathon's resource limits:
 ```bash
-docker run --cpus="2.0" --memory="4g" -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output hybrid-routing-agent
+docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" --env-file .env hybrid-routing-agent
 ```
-*(Note: Ensure your `.env` file is properly injected or pass the API key via `-e OPENROUTER_API_KEY=...` when running the container).*
+*(If you do not have a `.env` file, you can pass the keys directly: `-e FIREWORKS_API_KEY="your_key"`)*
 
-## 📊 Expected Output
-
-Your console will display the dynamic routing decisions in real-time. For example:
-```text
-[T004] Category: summarize | Dynamic Budget: 271 tokens
-[T004] Verification: PASSED
-[T004] Source: local
-[T004] Completed in 15.56s
-
-[T002] Category: math | Dynamic Budget: 225 tokens
-[T002] Verification: FAILED -> Escalating to API
-  [API] Using model: tencent/hy3:free (difficulty: hard, max_tokens: 1024)
-[T002] Source: api_escalation
-[T002] Completed in 70.82s
+#### 3. Test the Live Backend
+Once the container is running, the API is live at `http://localhost:8000`. You can test it by sending a POST request to `/solve`:
+```bash
+curl -X POST "http://localhost:8000/solve" \
+     -H "Content-Type: application/json" \
+     -d '{"task_id": "demo-01", "prompt": "If a train travels 60mph for 2 hours, how far does it go?"}'
 ```
-
-All final answers are formatted beautifully into `output/results.json`.
 
 ---
 *Built for the AMD Developer Hackathon.*
