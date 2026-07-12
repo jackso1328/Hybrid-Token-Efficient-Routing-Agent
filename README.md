@@ -66,7 +66,7 @@ If you want to run the agent locally, you can set up and use the environment in 
 #### 1. Prerequisites
 - **Python 3.10+**
 - **Fireworks API Key**
-- - **Download the Gemma 4 E2B Q4 Model to run locally from https://huggingface.co/lmstudio-community/gemma-4-E2B-it-GGUF/blob/main/gemma-4-E2B-it-Q4_K_M.gguf**
+- **Download the Gemma 4 E2B Q4 Model to run locally from https://huggingface.co/lmstudio-community/gemma-4-E2B-it-GGUF/blob/main/gemma-4-E2B-it-Q4_K_M.gguf**
 
 #### 2. Installation
 Clone the repository and install the optimized dependencies:
