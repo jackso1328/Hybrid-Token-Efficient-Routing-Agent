@@ -109,10 +109,7 @@ Launch the container in detached mode, exposing the live backend on port `8000`,
 **Important:** You must add your Fireworks API key. You can either use your `.env` file, or pass the key directly in the command:
 
 ```bash
-# If using your .env file:
-docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" --env-file .env proudsnow10/hybrid-routing-agent:latest
-
-# OR, pass your Fireworks API key directly:
+# Pass your Fireworks API key directly:
 docker run -d -p 8000:8000 --cpus="2.0" --memory="4g" -e FIREWORKS_API_KEY="your_api_key_here" -e ALLOWED_MODELS="accounts/fireworks/models/gemma-4-26b-a4b-it" proudsnow10/hybrid-routing-agent:latest
 ```
 
